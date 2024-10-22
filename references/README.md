@@ -20,10 +20,16 @@ Taxonomy of Non-image based people counting according to [Survey of Non-Image-Ba
 
 * [People Detection and Tracking with TOF Sensor](https://ieeexplore.ieee.org/document/4730441)
 * [Using Time-of-Flight Sensors for People Counting Applications](https://ieeexplore.ieee.org/document/9049169)
+* 8x8 IR sensor, thermopile [Monitoring Indoor People Presence in Buildings Using Low-Cost Infrared Sensor Array in Doorways](https://doi.org/10.3390/s21124062)
+Matrix partitioned into 4 slices (zones), presence of person in zone detected, entry room means presence in every zone respectively. Also referenced other techniques for detection people (vector machine algorithm, Otsu's binarization)
 * Ultrasonic sensor [Doorjamb: Unobtrusive Room-level Tracking of People in Homes using Doorway Sensors](https://doi.org/10.1145/2426656.2426687)
 * PIR sensors used for [Application of Internet of Things in academic buildings for space use efficiency using occupancy and booking data](https://www.sciencedirect.com/science/article/pii/S0360132320307241)
 * [A TRIZ Approach for Designing a Smart Lighting and Control System for Classrooms Based on Counter Application with Dual PIR Sensors](https://www.mdpi.com/1424-8220/24/4/1177)
 
+#### Commercial systems
+* Automatic commercial system using 76 800 pixels ToF sensor [IRMA 6](https://www.iris-sensing.com/products/irma-6/)
+* Other commercial system using ToF - GDPR friendly [Ultima-AI](https://v-count.com/ultima-ai/#)
+* [Article](https://medium.com/density-inc/7-technologies-that-count-people-buildings-offices-742785d2030f) promoting [Density Inc.](https://www.density.io/open-area?utm_source=medium&utm_content=7+Technologies) system based on ToF sensors & machine learning
 
 ## Device-based
 
@@ -35,3 +41,4 @@ Taxonomy of Non-image based people counting according to [Survey of Non-Image-Ba
 
 # Image-based solutions
 * [Automated visitor and wildlife monitoring with camera traps and machine learning](https://doi.org/10.1002/rse2.367)
+* [Algorithm for Accurate People Counting in Conference Halls](https://ieeexplore.ieee.org/document/10516342)
