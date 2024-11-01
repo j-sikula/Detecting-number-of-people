@@ -13,6 +13,7 @@
 #include "platform.h"
 #include <avr/io.h>
 #include "gpio.h"
+#include "delay.h"
 
 
 
@@ -113,9 +114,9 @@ uint8_t VL53L7CX_WaitMs(
 		VL53L7CX_Platform *p_platform,
 		uint32_t TimeMs)
 {
-	uint8_t status = 255;
-
-	/* Need to be implemented by customer. This function returns 0 if OK */
 	
-	return status;
+	/* Need to be implemented by customer. This function returns 0 if OK */
+	delay(TimeMs);
+	
+	return 0;
 }
