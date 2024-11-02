@@ -6,7 +6,7 @@
 /**
  * Enables Timer0 and for counting milliseconds
  */
-void delayInit();
+void delayEnable();
 
 
 /**

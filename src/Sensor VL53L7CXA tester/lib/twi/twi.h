@@ -64,7 +64,7 @@
 #define TWI_NACK 1 /**< @brief NACK value for writing to I2C/TWI bus */
 #define DDR(_x) (*(&_x - 1)) /**< @brief Address of Data Direction Register of port _x */
 #define PIN(_x) (*(&_x - 2)) /**< @brief Address of input register of port _x */
-
+#define TWI_BUFFER_SIZE 30  /**< @brief Size of buffer 32, but reserved 2 bytes for address */
 
 /* Function prototypes -----------------------------------------------*/
 /**

@@ -5,7 +5,7 @@
 volatile uint32_t nMillis = 0;
 
 
-void delayInit()
+void delayEnable()
 {
     TIM0_ovf_enable();
     TIM0_ovf_1ms();
