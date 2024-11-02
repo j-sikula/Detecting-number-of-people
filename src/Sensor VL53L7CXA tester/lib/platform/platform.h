@@ -25,6 +25,9 @@
 #define LPN     PD4     //output  active LOW
 #define PWR_EN  PD5     //output  active HIGH
 
+#define FIRMWARE "FWR"
+#define DEFAULT_CONFIG "CFG"
+
 /**
  * @brief Structure VL53L7CX_Platform needs to be filled by the customer,
  * depending on his platform. At least, it contains the VL53L7CX I2C address.
@@ -134,6 +137,23 @@ uint8_t VL53L7CX_WrMulti(
 		uint16_t RegisterAdress,
 		uint8_t *p_values,
 		uint32_t size);
+
+/**
+ * @brief Mandatory function used to write firmware from PC via USART.
+ * @param (VL53L7CX_Platform*) p_platform : Pointer of VL53L7CX platform
+ * structure.
+ * @param (uint16_t) Address : I2C location of values to write. 
+ * @param (uint32_t) size : Size of *p_values buffer.
+ * @return (uint8_t) status : 0 if OK
+ */
+
+uint8_t VL53L7CX_WrFirmware(
+		VL53L7CX_Platform *p_platform,
+		uint16_t RegisterAdress,
+		char* typeOfRequestedData, 		
+		uint32_t size);
+
+
 
 /**
  * @brief Optional function, only used to perform an hardware reset of the

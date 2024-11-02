@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "gpio.h"
 #include "platform.h"
 #include "delay.h"
@@ -128,17 +129,24 @@ int main(void){
 			/* As the sensor is set in 4x4 mode by default, we have a total 
 			 * of 16 zones to print. For this example, only the data of first zone are 
 			 * print */
-      char* s_data;
-      sprintf(s_data, "Print data no : %3u\n", Dev.streamcount);
-			uart_puts(s_data);
+      char string[3];
+      uart_puts("Print data no : \n");
+      itoa(Dev.streamcount, string, 10);
+			uart_puts(string);
 			for(i = 0; i < 16; i++)
 			{
-        char* s_data;
-				sprintf(s_data, "Zone : %3d, Status : %3u, Distance : %4d mm\n",
-					i,
-					Results.target_status[VL53L7CX_NB_TARGET_PER_ZONE*i],
-					Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE*i]);
-        uart_puts(s_data);
+        
+				uart_puts("Zone : ");
+				       
+        itoa(i, string, 10);
+        uart_puts(string);
+        uart_puts("Status : ");
+        itoa(Results.target_status[VL53L7CX_NB_TARGET_PER_ZONE*i], string, 10);
+        uart_puts(string);
+        uart_puts("Distance : ");
+        itoa(Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE*i], string, 10);
+        uart_puts(string);
+        uart_puts(" mm \n");
 			}
 			uart_puts("\n");
 			loop++;

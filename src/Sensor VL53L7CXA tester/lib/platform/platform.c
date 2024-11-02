@@ -15,6 +15,9 @@
 #include "gpio.h"
 #include "delay.h"
 #include "twi.h"
+#include "uart.h"
+
+
 
 
 
@@ -63,7 +66,7 @@ uint8_t VL53L7CX_WrMulti(
 		
 		for (uint8_t j = 0; j < TWI_BUFFER_SIZE; j++)	// used for filling buffer with data
 		{
-			if (twi_write(p_values + i) == 0) {
+			if (twi_write(*(p_values + i)) == 0) {
 				return 1;
 			} else {
 				i ++;
@@ -180,3 +183,45 @@ uint8_t VL53L7CX_WaitMs(
 	
 	return 0;
 }
+
+/**
+ * Upload firmware from UART to I2C
+ */
+
+uint8_t VL53L7CX_WrFirmware(VL53L7CX_Platform *p_platform,
+		uint16_t RegisterAdress,
+		char* typeOfRequestedData,		
+		uint32_t size)
+{
+	uint8_t status = 255;
+	uart_puts(typeOfRequestedData);	//request firmware from uart
+	
+	uint8_t bufferCounter = 0;
+	unsigned int receivedChar = 0;
+	for(uint32_t i = 0; i < size; i++)
+	{
+		receivedChar = uart_getc();
+		while (receivedChar == UART_NO_DATA)	//wait for data
+		{
+			receivedChar = uart_getc();
+		}
+
+		if (bufferCounter < 30)
+		{
+			
+
+			twi_write(receivedChar);
+			bufferCounter++;
+		}	
+		else
+		{
+			uint8_t ack = twi_write(receivedChar);
+			bufferCounter = 0;
+			uart_putc('C'); //requesting for other packet
+		}
+	}
+	status = 0;
+	
+	return status;
+}
+

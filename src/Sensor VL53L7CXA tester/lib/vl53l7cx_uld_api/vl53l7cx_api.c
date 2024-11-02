@@ -246,7 +246,7 @@ uint8_t vl53l7cx_init(
 	uint32_t single_range = 0x01;
 
 	p_dev->default_xtalk = (uint8_t*)VL53L7CX_DEFAULT_XTALK;
-	p_dev->default_configuration = (uint8_t*)VL53L7CX_DEFAULT_CONFIGURATION;
+	//p_dev->default_configuration = (uint8_t*)VL53L7CX_DEFAULT_CONFIGURATION;
 	p_dev->is_auto_stop_enabled = (uint8_t)0x0;
 
 	/* SW reboot sequence */
@@ -319,14 +319,11 @@ uint8_t vl53l7cx_init(
 
 	/* Download FW into VL53L7CX */
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x09);
-	status |= VL53L7CX_WrMulti(&(p_dev->platform),0,
-		(uint8_t*)&VL53L7CX_FIRMWARE[0],0x8000);
+	status |= VL53L7CX_WrFirmware(&(p_dev->platform),0,FIRMWARE,0x8000);
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x0a);
-	status |= VL53L7CX_WrMulti(&(p_dev->platform),0,
-		(uint8_t*)&VL53L7CX_FIRMWARE[0x8000],0x8000);
+	status |= VL53L7CX_WrFirmware(&(p_dev->platform),0,FIRMWARE,0x8000);
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x0b);
-	status |= VL53L7CX_WrMulti(&(p_dev->platform),0,
-		(uint8_t*)&VL53L7CX_FIRMWARE[0x10000],0x5000);
+	status |= VL53L7CX_WrFirmware(&(p_dev->platform),0,FIRMWARE,0x5000);
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x01);
 
 	/* Check if FW correctly downloaded */
@@ -376,9 +373,7 @@ uint8_t vl53l7cx_init(
 	status |= _vl53l7cx_send_xtalk_data(p_dev, VL53L7CX_RESOLUTION_4X4);
 
 	/* Send default configuration to VL53L7CX firmware */
-	status |= VL53L7CX_WrMulti(&(p_dev->platform), 0x2c34,
-		p_dev->default_configuration,
-		sizeof(VL53L7CX_DEFAULT_CONFIGURATION));
+	status |= VL53L7CX_WrFirmware(&(p_dev->platform), 0x2c34, DEFAULT_CONFIG,972);
 	status |= _vl53l7cx_poll_for_answer(p_dev, 4, 1,
 		VL53L7CX_UI_CMD_STATUS, 0xff, 0x03);
 

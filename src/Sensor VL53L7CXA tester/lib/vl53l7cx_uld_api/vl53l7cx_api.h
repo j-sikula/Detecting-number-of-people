@@ -271,7 +271,7 @@ typedef struct
 	/* Size of data read though I2C */
 	uint32_t	        data_read_size;
 	/* Address of default configuration buffer */
-	uint8_t		        *default_configuration;
+	//uint8_t		        *default_configuration;
 	/* Address of default Xtalk buffer */
 	uint8_t		        *default_xtalk;
 	/* Offset buffer */
