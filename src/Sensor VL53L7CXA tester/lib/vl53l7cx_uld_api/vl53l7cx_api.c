@@ -267,7 +267,7 @@ uint8_t vl53l7cx_init(
 	uint8_t pipe_ctrl[] = {VL53L7CX_NB_TARGET_PER_ZONE, 0x00, 0x01, 0x00};
 	uint32_t single_range = 0x01;
 
-	p_dev->default_xtalk = (uint8_t*)VL53L7CX_DEFAULT_XTALK;
+	//p_dev->default_xtalk = (uint8_t*)VL53L7CX_DEFAULT_XTALK;
 	//p_dev->default_configuration = (uint8_t*)VL53L7CX_DEFAULT_CONFIGURATION;
 	p_dev->is_auto_stop_enabled = (uint8_t)0x0;
 

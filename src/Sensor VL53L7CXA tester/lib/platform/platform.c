@@ -12,6 +12,7 @@
 
 #include "platform.h"
 #include <avr/io.h>
+#include <stdlib.h>
 #include "gpio.h"
 #include "delay.h"
 #include "twi.h"
@@ -205,35 +206,66 @@ uint8_t VL53L7CX_WrFirmware(VL53L7CX_Platform *p_platform,
 		char* typeOfRequestedData,		
 		uint32_t size)
 {
-	uint8_t status = 255;
+	uint8_t status = 0;
 	uart_puts(typeOfRequestedData);	//request firmware from uart
 	
+	uint8_t address = (uint8_t)((p_platform->address >> 1) & 0xFF);
+	twi_start();
+	status = twi_write((address<<1)|TWI_WRITE);
+		
+
+	status = twi_write(RegisterAdress >> 8);
+		
+	status = twi_write(RegisterAdress & 0xff);
+	uart_puts("Address sent");
+
 	uint8_t bufferCounter = 0;
 	unsigned int receivedChar = 0;
 	for(uint32_t i = 0; i < size; i++)
 	{
-		receivedChar = uart_getc();
-		while (receivedChar == UART_NO_DATA)	//wait for data
+		receivedChar = uart_getc();		
+		while ((receivedChar & 0xff00) != 0)	//wait for data
 		{
-			receivedChar = uart_getc();
+			receivedChar = uart_getc();			
 		}
+		/*
+		char string[8];
+		itoa(bufferCounter, string, 10);
+		uart_puts(string);
+		uart_puts("buffCount\nReceived char");
+		uart_putc((receivedChar & 0xFF)+'0');
+		uart_putc((receivedChar >>8)+'0');
+		uart_puts("\n");
+
+		*/
 
 		if (bufferCounter < 30)
-		{
-			
-
-			twi_write(receivedChar);
+		{		
+			status |= twi_write(receivedChar & 0xFF);
 			bufferCounter++;
 		}	
 		else
 		{
-			uint8_t ack = twi_write(receivedChar);
 			bufferCounter = 0;
+			status |= twi_write(receivedChar & 0xFF);
+			
+			if (status == 0){
 			uart_putc('C'); //requesting for other packet
+			}
+			else
+			{
+				uart_puts("Status wrong C");
+			}
 		}
 	}
 	status = 0;
-	
+	twi_stop();
+	uart_puts("\nSize of uploaded: ");
+	char string[8];
+	itoa(size, string, 10);
+	uart_puts(string);
+	uart_puts("\n");
+
 	return status;
 }
 
