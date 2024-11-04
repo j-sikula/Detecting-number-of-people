@@ -14,6 +14,7 @@
 #include <string.h>
 #include "vl53l7cx_api.h"
 #include "vl53l7cx_buffers.h"
+#include "uart.h"
 
 /**
  * @brief Inner function, not available outside this file. This function is used
@@ -219,20 +220,41 @@ uint8_t vl53l7cx_is_alive(
 		uint8_t				*p_is_alive)
 {
 	uint8_t status = VL53L7CX_STATUS_OK;
-	uint8_t device_id, revision_id;
-
+	uint8_t device_id =0;
+	uint8_t revision_id = 0;
+	uint8_t rID = 0;
+	
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x00);
 	status |= VL53L7CX_RdByte(&(p_dev->platform), 0, &device_id);
 	status |= VL53L7CX_RdByte(&(p_dev->platform), 1, &revision_id);
+	rID = revision_id;	
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x02);
+	
 
-	if((device_id == (uint8_t)0xF0) && (revision_id == (uint8_t)0x02))
+	if((device_id == (uint8_t)0xF0) && (rID == (uint8_t)0x02))
 	{
 		*p_is_alive = 1;
+		uart_puts("alive OK with status");
+		uart_putc(status+'0');
+		char string[2];
+		
+		itoa(revision_id, string, 16);
+		uart_puts("\nrevision_id 0x");
+		uart_puts(string);
 	}
 	else
 	{
 		*p_is_alive = 0;
+		char string[2];
+		itoa(revision_id, string, 16);
+		uart_puts(string);
+		uart_puts(" revision_id\nrID");
+		itoa(rID, string, 16);
+		uart_puts(string);
+
+		
+		
+
 	}
 
 	return status;

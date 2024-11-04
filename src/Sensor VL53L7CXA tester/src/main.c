@@ -28,7 +28,8 @@ int main(void){
   //Mandatory init commands for good library working
   delayEnable();  //Needed for using delay in platform.c
   twi_init();   //I2C init
-  uart_init((unsigned int)115200);
+  uart_init(UART_BAUD_SELECT(115200, F_CPU));
+  uart_puts("Init UART\n");	//if not send anything via UART, twi does not respond with ack??????
   
   /*********************************/
 	/*   VL53L7CX ranging variables  */
@@ -66,6 +67,7 @@ int main(void){
 	if(!isAlive || status)
 	{
 		uart_puts("VL53L7CX not detected at requested address\n");
+		delay(3000);
 		return status;
 	}
 
@@ -74,6 +76,7 @@ int main(void){
 	if(status)
 	{
 		uart_puts("VL53L7CX ULD Loading failed\n");
+		delay(3000);
 		return status;
 	}
 
@@ -90,6 +93,7 @@ int main(void){
 	if(status)
 	{
 		uart_puts("vl53l7cx_set_power_mode failed, status not 0\n");
+		delay(3000);
 		return status;
 	}
 	uart_puts("VL53L7CX is now sleeping\n");
@@ -103,6 +107,7 @@ int main(void){
 	if(status)
 	{
 		uart_puts("vl53l7cx_set_power_mode failed, status not 0\n");
+		delay(3000);
 		return status;
 	}
 	uart_puts("VL53L7CX is now waking up\n");

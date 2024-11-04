@@ -53,25 +53,33 @@ uint8_t VL53L7CX_WrMulti(
 	uint8_t status = 255;
 
 	//https://github.com/stm32duino/VL53L7CX/blob/main/src/platform.cpp
+	
 
-	uint32_t i = 0;
+	uint32_t i = 0;	
 	while (i < size) 
 	{
 		twi_start();
-		uint8_t address = (uint8_t)((p_platform->address << 1) & 0xFF);
-		twi_write(address|TWI_WRITE);
+		uint8_t address = (uint8_t)((p_platform->address >> 1) & 0xFF);		//tested, address 0x29 respond
+		status = twi_write((address<<1)|TWI_WRITE);
+		
 
-		twi_write(RegisterAdress >> 8);
-		twi_write(RegisterAdress & 0xff);
+		status = twi_write(RegisterAdress >> 8);
+		
+		status = twi_write(RegisterAdress & 0xff);
+		
 		
 		for (uint8_t j = 0; j < TWI_BUFFER_SIZE; j++)	// used for filling buffer with data
 		{
-			if (twi_write(*(p_values + i)) == 0) {
+			if (twi_write(*(p_values + i)) != 0) {
+				uart_putc(i+'0');
+				uart_puts("NACK write TWI\n");
+				delay(100);
 				return 1;
 			} else {
-				i ++;
+				i++;
 				if (i >= size){
-					break;
+					twi_stop();
+					return 0;
 				}
 			}
 		}
@@ -99,25 +107,29 @@ uint8_t VL53L7CX_RdMulti(
 	while (i < size) 
 	{
 		twi_start();
-		uint8_t address = (uint8_t)((p_platform->address << 1) & 0xFF);
-		twi_write(address|TWI_WRITE);
+		uint8_t address = (uint8_t)((p_platform->address >> 1) & 0xFF);
+		status = twi_write(address<<1|TWI_WRITE);
 
-		twi_write(RegisterAdress >> 8);
-		twi_write(RegisterAdress & 0xff);
+		status = twi_write(RegisterAdress >> 8);
+		status = twi_write(RegisterAdress & 0xff);
 		
 		twi_stop();
 		twi_start();
 
-		twi_write(address|TWI_READ);
+		status = twi_write(address<<1|TWI_READ);
 		
 		for (uint8_t j = 0; j < TWI_BUFFER_SIZE; j++)	// used for filling buffer with data
 		{
-			p_values[i] = twi_read(TWI_ACK);
-        	i++;
-			if(size-i == 1){	//last byte with NACK
+			
+			if(size-i <= 1){	//last byte with NACK
 				p_values[i] = twi_read(TWI_NACK);
-				i++;
-				break;
+				twi_stop();
+				return 0;
+			} 
+			else
+			{
+				p_values[i] = twi_read(TWI_ACK);
+        		i++;
 			}
 		}
     }
@@ -125,7 +137,7 @@ uint8_t VL53L7CX_RdMulti(
 	status = 0;	
 
 	
-	/* Need to be implemented by customer. This function returns 0 if OK */
+	
 	
 	return status;
 }
