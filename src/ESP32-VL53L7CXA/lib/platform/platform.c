@@ -61,10 +61,10 @@ void VL53L7CX_InitCommunication(VL53L7CX_Platform *p_platform)
 	i2c_master_stop(cmd);
 
 	ESP_LOGI("i2c", "0x%02x", p_platform->address);
-	
+
 	// Send all the queued commands on the I2C bus, in master mode
 	if (i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000 / portTICK_PERIOD_MS)) == ESP_OK)
-	{		
+	{
 		ESP_LOGI("i2c", "found device with address 0x%02x", p_platform->address);
 	}
 
@@ -109,8 +109,7 @@ uint8_t VL53L7CX_WrMulti(
 	uint32_t i = 0;
 	while (i < size)
 	{
-		
-		
+
 		// Queue a "START" signal to a list
 		i2c_master_start(cmd);
 
@@ -118,42 +117,40 @@ uint8_t VL53L7CX_WrMulti(
 		i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_WRITE, 0);
 		i2c_master_write_byte(cmd, RegisterAdress >> 8, 0);
 		i2c_master_write_byte(cmd, RegisterAdress & 0xff, true);
-		
 
-		// Send all the queued commands on the I2C bus, in master mode
-		if (i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000 / portTICK_PERIOD_MS)) == ESP_OK)
+		for (uint8_t j = 0; j < I2C_BUFFER_SIZE; j++) // used only for filling buffer with data
 		{
-			ESP_LOGI("i2c", "Address sent");
-		}
-		
-
-		for (uint8_t j = 0; j < I2C_BUFFER_SIZE; j++) // used only for filling buffer with data, var j not used
-		{
-			if (i < (size-1))
+			if (i < (size - 1))
 			{
-				i2c_master_write_byte(cmd, *(p_values + i), false);
+				if (j < (I2C_BUFFER_SIZE - 1))
+				{
+					i2c_master_write_byte(cmd, *(p_values + i), true);
+				}
+				else
+				{
+					i2c_master_write_byte(cmd, *(p_values + i), false);
+				}
 				i++;
 			}
 			else
 			{
-				i2c_master_write_byte(cmd, *(p_values + i), true);
-				i++;				
+				i2c_master_write_byte(cmd, *(p_values + i), true); // last packet with ack_en
+				i++;
+				// Queue a "STOP" signal to a list
+				i2c_master_stop(cmd);
 				break;
-				
 			}
 		}
-		// Queue a "STOP" signal to a list
-		i2c_master_stop(cmd);
 
 		// Send all the queued commands on the I2C bus, in master mode
 		if (i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000 / portTICK_PERIOD_MS)) == ESP_OK)
 		{
 			ESP_LOGI("i2c", "Packet sent");
+			// Free the I2C commands list
+			i2c_cmd_link_delete(cmd);
 			status = 0;
 		}
 	}
-
-	
 
 	/* Need to be implemented by customer. This function returns 0 if OK */
 
@@ -169,26 +166,39 @@ uint8_t VL53L7CX_RdMulti(
 	uint8_t status = 255;
 
 	// https://github.com/stm32duino/VL53L7CX/blob/main/src/platform.cpp
+
+	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+
+	ESP_LOGI("i2c", "Reading %" PRIu32 " bytes", size);
 	/*
 		uint32_t i = 0;
 		while (i < size)
 		{
-			twi_start();
-			uint8_t address = (uint8_t)((p_platform->address >> 1) & 0xFF);
-			status = twi_write(address<<1|TWI_WRITE);
+			// Queue a "START" signal to a list
+			i2c_master_start(cmd);
 
-			status = twi_write(RegisterAdress >> 8);
-			status = twi_write(RegisterAdress & 0xff);
+			// Slave address to write data
+			i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_WRITE, false);
+			i2c_master_write_byte(cmd, RegisterAdress >> 8, false);
+			i2c_master_write_byte(cmd, RegisterAdress & 0xff, true);
+			i2c_master_stop(cmd);
 
-			twi_stop();
-			twi_start();
+			// Send all the queued commands on the I2C bus, in master mode
+			if (i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000 / portTICK_PERIOD_MS)) == ESP_OK)
+			{
+				ESP_LOGI("i2c", "Addr READ sent");
+			}
 
-			status = twi_write(address<<1|TWI_READ);
+			i2c_master_start(cmd);
+			i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_READ, false);
 
-			for (uint8_t j = 0; j < TWI_BUFFER_SIZE; j++)	// used for filling buffer with data
+
+
+			for (uint8_t j = 0; j < TWI_BUFFER_SIZE; j++) // used for filling buffer with data
 			{
 
-				if(size-i <= 1){	//last byte with NACK
+				if (size - i <= 1)
+				{ // last byte with NACK
 					p_values[i] = twi_read(TWI_NACK);
 					twi_stop();
 					return 0;
@@ -202,10 +212,7 @@ uint8_t VL53L7CX_RdMulti(
 		}
 		twi_stop();
 		status = 0;
-
-
-
-		*/
+	*/
 	return status;
 }
 /**
