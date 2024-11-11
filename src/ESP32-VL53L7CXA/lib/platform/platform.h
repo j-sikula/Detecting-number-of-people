@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <driver/i2c.h>
 
 /**
  * Defining ports
@@ -25,7 +26,10 @@
 #define LPN     16  //D11   //output  active LOW
 #define PWR_EN  17  //D10   //output  active HIGH
 
-
+#define I2C_MASTER_SDA_IO 21
+#define I2C_MASTER_SCL_IO 22
+#define I2C_MASTER_FREQ_HZ 100000
+#define I2C_BUFFER_SIZE 30
 
 /**
  * @brief Structure VL53L7CX_Platform needs to be filled by the customer,

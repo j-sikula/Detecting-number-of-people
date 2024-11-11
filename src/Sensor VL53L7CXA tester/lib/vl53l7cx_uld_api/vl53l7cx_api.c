@@ -221,14 +221,14 @@ uint8_t vl53l7cx_is_alive(
 {
 	uint8_t status = VL53L7CX_STATUS_OK;
 	uint8_t device_id =0;
-	uint8_t revision_id = 0;
+	volatile uint8_t revision_id = 0;
 	uint8_t rID = 0;
 	
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x00);
 	status |= VL53L7CX_RdByte(&(p_dev->platform), 0, &device_id);
 	status |= VL53L7CX_RdByte(&(p_dev->platform), 1, &revision_id);
 	rID = revision_id;	
-	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x02);
+	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, (uint8_t)0x02);
 	
 
 	if((device_id == (uint8_t)0xF0) && (rID == (uint8_t)0x02))
@@ -338,7 +338,9 @@ uint8_t vl53l7cx_init(
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x01);
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x20, 0x07);
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x20, 0x06);
-
+	if(!status){
+		uart_puts("Staus OK");
+	}
 	/* Download FW into VL53L7CX */
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x09);
 	status |= VL53L7CX_WrFirmware(&(p_dev->platform),0,FIRMWARE,0x8000);
@@ -354,8 +356,11 @@ uint8_t vl53l7cx_init(
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x01);
 	status |= _vl53l7cx_poll_for_answer(p_dev, 1, 0, 0x21, 0x10, 0x10);
 	if(status != (uint8_t)0){
+		uart_puts("Firmware Failed");
+		VL53L7CX_WaitMs(&(p_dev->platform), 3000);
 		goto exit;
 	}
+	uart_puts("Firmware OK");
 
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x00);
 	status |= VL53L7CX_RdByte(&(p_dev->platform), 0x7fff, &tmp);
@@ -371,9 +376,15 @@ uint8_t vl53l7cx_init(
 	status |= VL53L7CX_RdByte(&(p_dev->platform), 0x7fff, &tmp);
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x0C, 0x00);
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x0B, 0x01);
+	if(!status){
+		uart_puts("Staus reset MCU OK");
+	}
 	status |= _vl53l7cx_poll_for_mcu_boot(p_dev);
 	if(status != (uint8_t)0){
+		uart_puts("Polling failed");
 		goto exit;
+	} else {
+		uart_puts("Poll passed");
 	}
 
 	status |= VL53L7CX_WrByte(&(p_dev->platform), 0x7fff, 0x02);
@@ -389,15 +400,30 @@ uint8_t vl53l7cx_init(
 		VL53L7CX_OFFSET_BUFFER_SIZE);
 	status |= _vl53l7cx_send_offset_data(p_dev, VL53L7CX_RESOLUTION_4X4);
 
+	if(!status){
+		uart_puts("Staus offset OK");
+	} else {
+		uart_puts("Offset failed");
+	}
+
 	/* Set default Xtalk shape. Send Xtalk to sensor */
 	(void)memcpy(p_dev->xtalk_data, (uint8_t*)VL53L7CX_DEFAULT_XTALK,
 		VL53L7CX_XTALK_BUFFER_SIZE);
 	status |= _vl53l7cx_send_xtalk_data(p_dev, VL53L7CX_RESOLUTION_4X4);
 
+	if(!status){
+		uart_puts("Staus xTalk OK");
+	} else {
+		uart_puts("XTalk failed");
+	}
+
 	/* Send default configuration to VL53L7CX firmware */
 	status |= VL53L7CX_WrFirmware(&(p_dev->platform), 0x2c34, DEFAULT_CONFIG,972);
 	status |= _vl53l7cx_poll_for_answer(p_dev, 4, 1,
 		VL53L7CX_UI_CMD_STATUS, 0xff, 0x03);
+	if(!status){
+		uart_puts("Staus deafault config OK");
+	}
 
 	status |= vl53l7cx_dci_write_data(p_dev, (uint8_t*)&pipe_ctrl,
 		VL53L7CX_DCI_PIPE_CONTROL, (uint16_t)sizeof(pipe_ctrl));

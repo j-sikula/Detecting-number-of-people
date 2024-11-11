@@ -19,16 +19,14 @@
 #include "vl53l7cx_api.h"
 
 /*-----------------------------------------------------------*/
-#define I2C_MASTER_SDA_IO 21
-#define I2C_MASTER_SCL_IO 22
-#define I2C_MASTER_FREQ_HZ 100000
+
 #define BUILT_IN_LED 2
 
 
 
 /*-----------------------------------------------------------*/
 // Used function(s)
-void vTaskI2CScanner();
+
 void vTaskLoop();
 
 
@@ -39,8 +37,19 @@ void app_main(void)
 {
     //Set GPIO
     gpio_reset_pin(BUILT_IN_LED); 
-    gpio_set_direction(BUILT_IN_LED, GPIO_MODE_OUTPUT);
+    gpio_set_direction(BUILT_IN_LED, GPIO_MODE_OUTPUT);       
 
+    // Start the i2c scanner task
+    xTaskCreate(vTaskLoop, "forever_loop", 16*1024, NULL, 5, NULL);
+}
+
+
+
+
+/*-----------------------------------------------------------*/
+void vTaskLoop()
+{
+     
     /*********************************/
 	/*   VL53L7CX ranging variables  */
 	/*********************************/
@@ -48,7 +57,7 @@ void app_main(void)
 	uint8_t 				status, loop, isAlive, isReady, i;
 	VL53L7CX_Configuration 	Dev;			/* Sensor configuration */
 	VL53L7CX_ResultsData 	Results;		/* Results data from VL53L7CX */
-
+    
 
 	/*********************************/
 	/*      Customer platform        */
@@ -59,95 +68,38 @@ void app_main(void)
 	*/
 	Dev.platform.address = VL53L7CX_DEFAULT_I2C_ADDRESS;
 
+    VL53L7CX_InitCommunication(&(Dev.platform));
+
 	/* (Optional) Reset sensor toggling PINs (see platform, not in API) */
 	//VL53L7CX_Reset_Sensor(&(Dev.platform));
 
-	/* (Optional) Set a new I2C address if the wanted address is different
-	* from the default one (filled with 0x20 for this example).
-	*/
-	//status = vl53l7cx_set_i2c_address(&Dev, 0x20);
-
-	
+		
 	/*********************************/
 	/*   Power on sensor and init    */
 	/*********************************/
 
-    VL53L7CX_InitCommunication(&(Dev.platform));
+   
+    ESP_LOGI("setup", "Memory allocated");
 
 	/* (Optional) Check if there is a VL53L7CX sensor connected */
 	status = vl53l7cx_is_alive(&Dev, &isAlive);
-            
+    if(!isAlive || status)
+	{
+		ESP_LOGI("sensor","VL53L7CX not detected at requested address\n");
+		
+	}
+   
+    status = vl53l7cx_init(&Dev);
+	if(status)
+	{
+		ESP_LOGI("sensor","VL53L7CX ULD Loading failed\n");
+		
+	}
 
-
-    ESP_LOGI("setup", "i2c scan application");
-
-    // Configure i2c controller in master mode
-    i2c_config_t conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = I2C_MASTER_SDA_IO,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_io_num = I2C_MASTER_SCL_IO,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = I2C_MASTER_FREQ_HZ,
-    };
-    i2c_param_config(I2C_NUM_0, &conf);
-    ESP_LOGI("i2c", "i2c controller configured");
-
-    // Install i2c driver
-    i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
-    ESP_LOGI("i2c", "i2c driver installed");
-
-    // Start the i2c scanner task
-    xTaskCreate(vTaskI2CScanner, "i2c_scanner", 2048, NULL, 5, NULL);
-}
-
-
-/*-----------------------------------------------------------*/
-void vTaskI2CScanner()
-{
-    uint8_t devices_found = 0;
-
-    ESP_LOGI("i2c", "scanning the bus...");
-    uint8_t sla = 29;
-        // Create the i2c commands list
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-
-    // Queue a "START" signal to a list
-    i2c_master_start(cmd);
-
-    // Slave address to write data
-    i2c_master_write_byte(cmd, (sla<<1) | I2C_MASTER_WRITE, true);
-
-    // Queue a "STOP" signal to a list
-    i2c_master_stop(cmd);
-
-    ESP_LOGI("i2c", "0x%02x", sla);
-
-    // Send all the queued commands on the I2C bus, in master mode
-    if (i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000/portTICK_PERIOD_MS)) == ESP_OK) {
-        ESP_LOGI("i2c", "found device with address 0x%02x", sla);
-        devices_found++;
-    }
-
-    // Free the I2C commands list
-    i2c_cmd_link_delete(cmd);
-
-    vTaskDelay(25 / portTICK_PERIOD_MS);  // 25 milliseconds
+	ESP_LOGI("sensor","VL53L7CX ULD ready ! (Version : %s)\n",
+			VL53L7CX_API_REVISION);
     
-    ESP_LOGI("i2c", "...scan completed!");
-    ESP_LOGI("i2c", "%d device(s) found", devices_found);
-
-    // Start the loop task
-    xTaskCreate(vTaskLoop, "forever_loop", 2048, NULL, 5, NULL);
-
-    // Delete this task
-    vTaskDelete(NULL);
-}
-
-
-/*-----------------------------------------------------------*/
-void vTaskLoop()
-{
+    
     // Forever loop
     while (1) {
         gpio_set_level(BUILT_IN_LED, 1);        // Set high level
