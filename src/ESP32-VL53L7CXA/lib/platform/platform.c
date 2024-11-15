@@ -107,20 +107,34 @@ uint8_t VL53L7CX_WrMulti(
 
 	/* Need to be implemented by customer. This function returns 0 if OK */
 	uint32_t i = 0;
+	i2c_master_start(cmd);
+
+	// Slave address to write data
+	i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_WRITE, 0);
+	i2c_master_write_byte(cmd, RegisterAdress >> 8, 0);
+	i2c_master_write_byte(cmd, RegisterAdress & 0xff, true);
+	status = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_PERIOD_MS);
+	i2c_cmd_link_delete(cmd);
+	cmd = i2c_cmd_link_create();
 	while (i < size)
 	{
-		// If still more than DEFAULT_I2C_BUFFER_LEN bytes to go, DEFAULT_I2C_BUFFER_LEN,
+		// If still more than I2C_BUFFER_SIZE bytes to go, I2C_BUFFER_SIZE,
 		// else the remaining number of bytes
-		size_t current_write_size = (size - i > I2C_BUFFER_SIZE ? I2C_BUFFER_SIZE : size - i);
+		size_t current_write_size;
+		if (size - i > I2C_BUFFER_SIZE)
+		{
+			current_write_size = I2C_BUFFER_SIZE;
+			i2c_master_write(cmd, p_values + i, current_write_size, true);
+		}
+		else
+		{
+			current_write_size = size - i;
+			i2c_master_write(cmd, p_values + i, current_write_size, true);
+			i2c_master_stop(cmd);
+		}
 
-		i2c_master_start(cmd);
-
-		// Slave address to write data
-		i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_WRITE, 0);
-		i2c_master_write_byte(cmd, RegisterAdress >> 8, 0);
-		i2c_master_write_byte(cmd, RegisterAdress & 0xff, true);
-		i2c_master_write(cmd, p_values + i, current_write_size, true);
-		i2c_master_stop(cmd);
+		
+		
 		status = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_PERIOD_MS);
 		if (status)
 		{
@@ -153,18 +167,71 @@ uint8_t VL53L7CX_RdMulti(
 	// https://github.com/stm32duino/VL53L7CX/blob/main/src/platform.cpp
 
 	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+	do
+	{
+		// Queue a "START" signal to a list
+		i2c_master_start(cmd);
 
-	// Queue a "START" signal to a list
-	i2c_master_start(cmd);
+		// Slave address to write data
+		i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_WRITE, 0);
+		i2c_master_write_byte(cmd, RegisterAdress >> 8, 0);
+		i2c_master_write_byte(cmd, RegisterAdress & 0xff, true);
+		i2c_master_stop(cmd);
+		status = i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000 / portTICK_PERIOD_MS));
+		i2c_cmd_link_delete(cmd);
+		cmd = i2c_cmd_link_create();
+		// ESP_LOGI("i2c", "Prep. read");
 
-	// Slave address to write data
-	i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_WRITE, 0);
-	i2c_master_write_byte(cmd, RegisterAdress >> 8, 0);
-	i2c_master_write_byte(cmd, RegisterAdress & 0xff, true);
-	i2c_master_stop(cmd);
-	status = i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000 / portTICK_PERIOD_MS));
-	status = i2c_master_read_from_device(I2C_NUM_0, p_platform->address >> 1, p_values, size, (1000 / portTICK_PERIOD_MS));
-	// i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_READ, true);
+	} while (status != 0);
+
+	uint32_t i = 0;
+	if (size > I2C_BUFFER_SIZE)
+	{
+		while (i < size)
+		{
+			// If still more than I2C_BUFFER_SIZE bytes to go, I2C_BUFFER_SIZE,
+			// else the remaining number of bytes
+			uint8_t current_read_size = (size - i > I2C_BUFFER_SIZE ? I2C_BUFFER_SIZE : size - i);
+			i2c_master_start(cmd);
+			i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_READ, true);
+			if (size > 1)
+			{
+				i2c_master_read(cmd, p_values + i, current_read_size - 1, I2C_MASTER_ACK);
+			}
+			i2c_master_read_byte(cmd, p_values + i + current_read_size - 1, I2C_MASTER_NACK);
+			i2c_master_stop(cmd);
+			status = i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000 / portTICK_PERIOD_MS));
+			i2c_cmd_link_delete(cmd);
+			cmd = i2c_cmd_link_create();
+			i += current_read_size;
+		}
+	}
+	else // only one buffer received
+	{
+		i2c_master_start(cmd);
+		i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_READ, true);
+		if (size > 1)
+		{
+			// i2c_master_read(cmd, p_values, size - 1, I2C_MASTER_ACK);
+			for (uint8_t j = 0; j < size - 1; j++)
+			{
+				i2c_master_read_byte(cmd, p_values + j, I2C_MASTER_ACK);
+				status = i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000 / portTICK_PERIOD_MS));
+				i2c_cmd_link_delete(cmd);
+				cmd = i2c_cmd_link_create();
+			}
+		}
+		i2c_master_read_byte(cmd, p_values + size - 1, I2C_MASTER_NACK);
+		i2c_master_stop(cmd);
+		status = i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000 / portTICK_PERIOD_MS));
+		i = size;
+		if (p_values[0] != 0)
+		{
+			ESP_LOGI("i2c", "Not read 0");
+		}
+	}
+	// status = i2c_master_read_from_device(I2C_NUM_0, p_platform->address >> 1, p_values, size, (1000 / portTICK_PERIOD_MS));
+	//  i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_READ, true);
 
 	// i2c_master_read_byte(cmd, p_values, I2C_MASTER_ACK);
 
@@ -176,10 +243,15 @@ uint8_t VL53L7CX_RdMulti(
 		//  Free the I2C commands list
 		i2c_cmd_link_delete(cmd);
 		status = 0;
+		if (size > 1)
+		{
+			ESP_LOGI("i2c", "Read sucessfully%" PRIu32 " bytes!!", size);
+		}
 	}
 	else
 	{
 		ESP_LOGE("i2c", "Packet not received");
+
 	} /*
 		 uint32_t i = 0;
 		 while (i < size)
