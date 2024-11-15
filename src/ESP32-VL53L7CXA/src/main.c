@@ -40,7 +40,7 @@ void app_main(void)
     gpio_set_direction(BUILT_IN_LED, GPIO_MODE_OUTPUT);       
 
     // Start the i2c scanner task
-    xTaskCreate(vTaskLoop, "forever_loop", 16*1024, NULL, 5, NULL);
+    xTaskCreate(vTaskLoop, "forever_loop", 40*1024, NULL, 5, NULL);
 }
 
 

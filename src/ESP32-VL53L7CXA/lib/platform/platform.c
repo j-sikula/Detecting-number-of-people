@@ -105,55 +105,35 @@ uint8_t VL53L7CX_WrMulti(
 	// https://github.com/stm32duino/VL53L7CX/blob/main/src/platform.cpp
 	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
 
-	ESP_LOGI("i2c", "Writing %" PRIu32 " bytes", size);
+	/* Need to be implemented by customer. This function returns 0 if OK */
 	uint32_t i = 0;
 	while (i < size)
 	{
+		// If still more than DEFAULT_I2C_BUFFER_LEN bytes to go, DEFAULT_I2C_BUFFER_LEN,
+		// else the remaining number of bytes
+		size_t current_write_size = (size - i > I2C_BUFFER_SIZE ? I2C_BUFFER_SIZE : size - i);
 
-		// Queue a "START" signal to a list
 		i2c_master_start(cmd);
 
 		// Slave address to write data
 		i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_WRITE, 0);
 		i2c_master_write_byte(cmd, RegisterAdress >> 8, 0);
 		i2c_master_write_byte(cmd, RegisterAdress & 0xff, true);
-
-		for (uint8_t j = 0; j < I2C_BUFFER_SIZE; j++) // used only for filling buffer with data
+		i2c_master_write(cmd, p_values + i, current_write_size, true);
+		i2c_master_stop(cmd);
+		status = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_PERIOD_MS);
+		if (status)
 		{
-			if (i < (size - 1))
-			{
-				if (j < (I2C_BUFFER_SIZE - 1))
-				{
-					i2c_master_write_byte(cmd, *(p_values + i), true);
-				}
-				else
-				{
-					i2c_master_write_byte(cmd, *(p_values + i), false);
-				}
-				i++;
-			}
-			else
-			{
-				i2c_master_write_byte(cmd, *(p_values + i), true); // last packet with ack_en
-				i++;
-				// Queue a "STOP" signal to a list
-				i2c_master_stop(cmd);
-				break;
-			}
+			ESP_LOGE("i2c", "Failed to send packet ERROR: %d", status);
+			return 1;
 		}
-
-		// Send all the queued commands on the I2C bus, in master mode
-		if (i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000 / portTICK_PERIOD_MS)) == ESP_OK)
+		else
 		{
-			ESP_LOGI("i2c", "Packet sent");
-			// Free the I2C commands list
+			i += current_write_size;
 			i2c_cmd_link_delete(cmd);
-			status = 0;
+			cmd = i2c_cmd_link_create();
 		}
 	}
-
-	/* Need to be implemented by customer. This function returns 0 if OK */
-
 	return status;
 }
 
@@ -165,11 +145,15 @@ uint8_t VL53L7CX_RdMulti(
 {
 	uint8_t status = 255;
 
+	if (size > 1)
+	{
+		ESP_LOGI("i2c", "Reading %" PRIu32 " bytes!", size);
+	}
+
 	// https://github.com/stm32duino/VL53L7CX/blob/main/src/platform.cpp
 
 	i2c_cmd_handle_t cmd = i2c_cmd_link_create();
 
-	ESP_LOGI("i2c", "Reading %" PRIu32 " bytes", size);
 	// Queue a "START" signal to a list
 	i2c_master_start(cmd);
 
@@ -179,19 +163,22 @@ uint8_t VL53L7CX_RdMulti(
 	i2c_master_write_byte(cmd, RegisterAdress & 0xff, true);
 	i2c_master_stop(cmd);
 	status = i2c_master_cmd_begin(I2C_NUM_0, cmd, (1000 / portTICK_PERIOD_MS));
-	status = i2c_master_read_from_device(I2C_NUM_0,p_platform->address >>1,p_values,size,(1000 / portTICK_PERIOD_MS));
-	//i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_READ, true);
+	status = i2c_master_read_from_device(I2C_NUM_0, p_platform->address >> 1, p_values, size, (1000 / portTICK_PERIOD_MS));
+	// i2c_master_write_byte(cmd, (p_platform->address) | I2C_MASTER_READ, true);
 
-	//i2c_master_read_byte(cmd, p_values, I2C_MASTER_ACK);
+	// i2c_master_read_byte(cmd, p_values, I2C_MASTER_ACK);
 
-	
+	// i2c_master_read_byte(cmd, p_values, I2C_MASTER_ACK);
+
 	if (status == 0)
 	{
-		ESP_LOGI("i2c", "Packet sent");
-		// Free the I2C commands list
+		// ESP_LOGI("i2c", "Packet sent");
+		//  Free the I2C commands list
 		i2c_cmd_link_delete(cmd);
 		status = 0;
-	} else{
+	}
+	else
+	{
 		ESP_LOGE("i2c", "Packet not received");
 	} /*
 		 uint32_t i = 0;
