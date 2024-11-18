@@ -95,11 +95,52 @@ void vTaskLoop()
 		ESP_LOGI("sensor","VL53L7CX ULD Loading failed\n");
 		
 	}
-
+	else{
 	ESP_LOGI("sensor","VL53L7CX ULD ready ! (Version : %s)\n",
 			VL53L7CX_API_REVISION);
+	}
     
-    
+	/*********************************/
+	/*         Ranging loop          */
+	/*********************************/
+
+	status = vl53l7cx_start_ranging(&Dev);
+
+	loop = 0;
+	while(loop < 10)
+	{
+		/* Use polling function to know when a new measurement is ready.
+		 * Another way can be to wait for HW interrupt raised on PIN A3
+		 * (GPIO 1) when a new measurement is ready */
+ 
+		status = vl53l7cx_check_data_ready(&Dev, &isReady);
+
+		if(isReady)
+		{
+			vl53l7cx_get_ranging_data(&Dev, &Results);
+
+			/* As the sensor is set in 4x4 mode by default, we have a total 
+			 * of 16 zones to print. For this example, only the data of first zone are 
+			 * print */
+			printf("Print data no : %3u\n", Dev.streamcount);
+			for(i = 0; i < 16; i++)
+			{
+				printf("Zone : %3d, Status : %3u, Distance : %4d mm\n",
+					i,
+					Results.target_status[VL53L7CX_NB_TARGET_PER_ZONE*i],
+					Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE*i]);
+			}
+			printf("\n");
+			loop++;
+		}
+
+		/* Wait a few ms to avoid too high polling (function in platform
+		 * file, not in API) */
+		VL53L7CX_WaitMs(&(Dev.platform), 5);
+	}
+
+	status = vl53l7cx_stop_ranging(&Dev);
+	printf("End of ULD demo\n");
     // Forever loop
     while (1) {
         gpio_set_level(BUILT_IN_LED, 1);        // Set high level
