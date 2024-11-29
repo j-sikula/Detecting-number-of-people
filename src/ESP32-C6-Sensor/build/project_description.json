@@ -1,7 +1,7 @@
 {
     "version":            "1.1",
     "project_name":       "ESP32-C6-Sensor",
-    "project_version":    "11aeab7",
+    "project_version":    "9ad940c-dirty",
     "project_path":       "C:/Users/Host/Documents/Bc/Detecting-number-of-people/src/ESP32-C6-Sensor",
     "idf_path":           "C:/Users/Host/esp/v5.3.1/esp-idf",
     "build_dir":          "C:/Users/Host/Documents/Bc/Detecting-number-of-people/src/ESP32-C6-Sensor/build",
@@ -1195,7 +1195,7 @@
             "managed_reqs": [],
             "managed_priv_reqs": [ "espressif__led_strip" ],
             "file": "C:/Users/Host/Documents/Bc/Detecting-number-of-people/src/ESP32-C6-Sensor/build/esp-idf/main/libmain.a",
-            "sources": [ "C:/Users/Host/Documents/Bc/Detecting-number-of-people/src/ESP32-C6-Sensor/main/blink_example_main.c" ],
+            "sources": [ "C:/Users/Host/Documents/Bc/Detecting-number-of-people/src/ESP32-C6-Sensor/main/blink_example_main.c", "C:/Users/Host/Documents/Bc/Detecting-number-of-people/src/ESP32-C6-Sensor/main/platform/platform.c", "C:/Users/Host/Documents/Bc/Detecting-number-of-people/src/ESP32-C6-Sensor/main/vl53l7cx_uld_api/vl53l7cx_api.c" ],
             "include_dirs": [ "." ]
         },
         "mbedtls": {
