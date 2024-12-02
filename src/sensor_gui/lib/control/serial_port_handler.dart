@@ -12,6 +12,7 @@ class SerialPortHandler {
       true; // after closing port, try to open it only once again
   SerialPort? serialPort;
   Stream<String>? receivedData;
+  Stream<List<int>>? decodedDataStream;
 
   // Constructor
   SerialPortHandler(this.baudRate, this.portName) {
@@ -49,6 +50,28 @@ class SerialPortHandler {
       SerialPortReader reader = SerialPortReader(serialPort!);
       receivedData = reader.stream.map((data) {
         return String.fromCharCodes(data);
+      });
+
+      String previousData = '';
+      decodedDataStream = reader.stream.map((data) {
+        previousData += String.fromCharCodes(data);
+        String currentData = '';
+        if(previousData.split('Data').length > 3) {
+          currentData = previousData.split('Data')[1];
+          previousData = 'Data${previousData.split('Data').last}';
+        }
+        if (currentData.isNotEmpty) {
+            List<int> decodedData = currentData
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .split(' ')
+              .skip(1)
+              .map((e) => int.tryParse(e) ?? 0)
+              .toList();
+            if (decodedData.length >= 64) {
+            return decodedData.take(64).toList();
+          }
+        }
+        return [];
       });
 
       return true;

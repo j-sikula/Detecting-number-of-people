@@ -104,7 +104,7 @@ void app_main(void)
 	xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 5, NULL);
 
     while (1) {
-        ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF");
+        //ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF");
         blink_led();
         /* Toggle the LED state */
         s_led_state = !s_led_state;
@@ -226,15 +226,12 @@ void vTaskLoop()
 				/* As the sensor is set in 4x4 mode by default, we have a total
 				 * of 16 zones to print. For this example, only the data of first zone are
 				 * print */
-				printf("Print data no : %3u\n", Dev.streamcount);
-				for (i = 0; i < 16; i++)
+				printf("\nData\n");
+				for (i = 0; i < VL53L7CX_RESOLUTION_8X8; i++)
 				{
-					printf("Zone : %3d, Status : %3u, Distance : %4d mm\n",
-						   i,
-						   Results.target_status[VL53L7CX_NB_TARGET_PER_ZONE * i],
-						   Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i]);
+					printf("%4d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i]);
 				}
-				printf("\033[17A");
+				
 				loop++;
 			}
 

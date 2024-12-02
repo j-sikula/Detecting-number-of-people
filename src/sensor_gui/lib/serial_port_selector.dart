@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:sensor_gui/control/serial_port_handler.dart';
+import 'package:sensor_gui/sensor_data_visualiser.dart';
 import 'package:sensor_gui/serial_monitor.dart';
 
 /// SerialPortSelector widget
@@ -20,9 +21,13 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
   String? _selectedPort;
   SerialPortHandler? serialPortHandler;
   String openCloseBtnLabel = 'Open Port';
-  bool isPortOpen = false;  // disables dropdown when port is open, prevents changing port while port is open
+  bool isPortOpen =
+      false; // disables dropdown when port is open, prevents changing port while port is open
   final GlobalKey<SerialMonitorState> _serialMonitorKey =
       GlobalKey<SerialMonitorState>(); // Key to access the SerialMonitor widget
+  final GlobalKey<SensorDataVisualiserState> _sensorDataVisualiserKey =
+      GlobalKey<
+          SensorDataVisualiserState>(); // Key to access the SerialMonitor widget
 
   @override
   void initState() {
@@ -53,7 +58,8 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
     if (!serialPortHandler!.isPortOpen) {
       //to open the port
       if (serialPortHandler!.openPort()) {
-        _serialMonitorKey.currentState!.enableListening();
+        // _serialMonitorKey.currentState!.enableListening();
+        _sensorDataVisualiserKey.currentState!.enableListening();
         setState(() {
           openCloseBtnLabel = 'Close ${_selectedPort!} Port';
         });
@@ -61,7 +67,8 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
     } else {
       //to close the port
       if (serialPortHandler!.closePort()) {
-        _serialMonitorKey.currentState!.stopListening();
+        _sensorDataVisualiserKey.currentState!.stopListening();
+        // _serialMonitorKey.currentState!.stopListening();
 
         setState(() {
           openCloseBtnLabel = 'Open Port';
@@ -72,36 +79,49 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Container(
-          margin: const EdgeInsets.all(10),
-          child: DropdownMenu<String>(
-            initialSelection: _selectedPort,
-            label: const Text('Select Port'),
-            onSelected: (String? newValue) {
-              setState(() {
-                _selectedPort = newValue;
-              });
-            },
-            dropdownMenuEntries: _availablePorts.map<DropdownMenuEntry<String>>((String port) {
-              return DropdownMenuEntry<String>(
-                value: port,
-                label: port,
-                enabled: !isPortOpen,
-              );
-            }).toList(),
-          ),
+        Row(
+          children: [
+            Container(
+              margin: const EdgeInsets.all(10),
+              child: DropdownMenu<String>(
+                initialSelection: _selectedPort,
+                label: const Text('Select Port'),
+                onSelected: (String? newValue) {
+                  setState(() {
+                    _selectedPort = newValue;
+                  });
+                },
+                dropdownMenuEntries: _availablePorts
+                    .map<DropdownMenuEntry<String>>((String port) {
+                  return DropdownMenuEntry<String>(
+                    value: port,
+                    label: port,
+                    enabled: !isPortOpen,
+                  );
+                }).toList(),
+              ),
+            ),
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(left: 10),
+                child: ElevatedButton(
+                  onPressed: openAndClosePort,
+                  child: Text(openCloseBtnLabel),
+                ),
+              ),
+            ),
+
+            //SerialMonitor(
+            //   key: _serialMonitorKey, serialPortHandler: serialPortHandler),
+          ],
         ),
-        Container(
-          margin: const EdgeInsets.only(left: 10),
-          child: ElevatedButton(
-            onPressed: openAndClosePort,
-            child: Text(openCloseBtnLabel),
-          ),
+        Expanded(
+          child: SensorDataVisualiser(
+              key: _sensorDataVisualiserKey,
+              serialPortHandler: serialPortHandler),
         ),
-        SerialMonitor(
-            key: _serialMonitorKey, serialPortHandler: serialPortHandler),
       ],
     );
   }
