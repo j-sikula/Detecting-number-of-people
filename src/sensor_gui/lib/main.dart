@@ -1,4 +1,3 @@
-
 /*
 MIT License
 
@@ -23,9 +22,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
-///
+//
 import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
+import 'package:sensor_gui/serial_port_selector.dart';
+
 
 void main() => runApp(const ExampleApp());
 
@@ -80,37 +81,8 @@ class ExampleAppState extends State<ExampleApp> {
         appBar: AppBar(
           title: const Text('Flutter Serial Port example'),
         ),
-        body: Scrollbar(
-          controller: _scrollController,
-          child: ListView(
-            controller: _scrollController,
-            children: [
-              for (final address in availablePorts)
-                Builder(builder: (context) {
-                  final port = SerialPort(address);
-                  return ExpansionTile(
-                    title: Text(address),
-                    children: [
-                      CardListTile('Description', port.description),
-                      CardListTile('Transport', port.transport.toTransport()),
-                      CardListTile('USB Bus', port.busNumber?.toPadded()),
-                      CardListTile('USB Device', port.deviceNumber?.toPadded()),
-                      CardListTile('Vendor ID', port.vendorId?.toHex()),
-                      CardListTile('Product ID', port.productId?.toHex()),
-                      CardListTile('Manufacturer', port.manufacturer),
-                      CardListTile('Product Name', port.productName),
-                      CardListTile('Serial Number', port.serialNumber),
-                      CardListTile('MAC Address', port.macAddress),
-                    ],
-                  );
-                }),
-            ],
-          ),
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: initPorts,
-          child: const Icon(Icons.refresh),
-        ),
+        body: 
+        const SerialPortSelector(),
       ),
     );
   }
