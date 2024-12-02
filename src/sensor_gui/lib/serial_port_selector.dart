@@ -43,7 +43,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
   }
 
   /// Callback function to open and close the selected port
-  void openAndClosePort() {
+  void onPressedOpenAndClosePort() {
     if (_selectedPort != null) {
       if (serialPortHandler == null ||
           serialPortHandler!.portName != _selectedPort) {
@@ -78,6 +78,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
     }
   }
 
+  /// Callback function to save the received data to a file
   void onBtnSavePressed() async {
     String? path = await FilePicker.platform.saveFile();
     if (path != null) {
@@ -116,7 +117,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
               child: Container(
                 margin: const EdgeInsets.only(left: 10),
                 child: ElevatedButton(
-                  onPressed: openAndClosePort,
+                  onPressed: onPressedOpenAndClosePort,
                   child: Text(openCloseBtnLabel),
                 ),
               ),

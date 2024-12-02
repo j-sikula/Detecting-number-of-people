@@ -58,8 +58,8 @@ class SerialPortHandler {
         previousData += String.fromCharCodes(
             data); // Append the received data to the previous data
         String currentData = '';
-        if (previousData.split('Data').length > 3) {
-          // Check if there is one complete set of data
+        if (previousData.split('Data').length > 2) {
+          // Checks if there is at least one complete set of data
           currentData = previousData.split('Data')[
               1]; // Extract the current data from the previous data between 'Data' strings
           previousData =
