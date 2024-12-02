@@ -1,3 +1,4 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:sensor_gui/control/serial_port_handler.dart';
@@ -77,6 +78,14 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
     }
   }
 
+  void onBtnSavePressed() async {
+    String? path = await FilePicker.platform.saveFile();
+    if (path != null) {
+      serialPortHandler!.saveDataToFile(path);
+    }
+    
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -116,6 +125,10 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
             //SerialMonitor(
             //   key: _serialMonitorKey, serialPortHandler: serialPortHandler),
           ],
+        ),
+        ElevatedButton(
+          onPressed: onBtnSavePressed,
+          child: const Text('Save to File'),
         ),
         Expanded(
           child: SensorDataVisualiser(

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
-
+import 'dart:io';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 
 class SerialPortHandler {
@@ -13,6 +13,7 @@ class SerialPortHandler {
   SerialPort? serialPort;
   Stream<String>? receivedData;
   Stream<List<int>>? decodedDataStream;
+  List<List<int>> measuredData = [];
 
   // Constructor
   SerialPortHandler(this.baudRate, this.portName) {
@@ -74,6 +75,7 @@ class SerialPortHandler {
               .toList();
           if (decodedData.length >= 64) {
             // Check if the data has at least 64 elements
+            measuredData.add(decodedData.take(64).toList());
             return decodedData
                 .take(64)
                 .toList(); // Return the first 64 elements
@@ -91,6 +93,38 @@ class SerialPortHandler {
       }
       log('Failed to open port');
       return false;
+    }
+  }
+
+  /// Saves the measured data to a file at [path]
+  /// The first row contains the header
+  /// After saving the data, the measured data is cleared
+ 
+  void saveDataToFile(String path) async {
+    if(path.contains('.') == false){  // Checks if the path contains the file extension
+      path = '$path.csv'; // Adds the file extension csv if not present
+    }
+
+    final file = File(path);
+    try {
+      final sink = file.openWrite();
+      sink.write('Data measured on VL53L7CX;Time;${DateTime.now()}\n');
+      for (var i = 0; i < 64; i++) {  // Write the header to the file
+        sink.write('Zone $i;');
+      }
+      sink.write('\n');
+      for (var measurement in measuredData) { // Write the data to the file
+        for (var data in measurement) {
+          sink.write('$data;');
+        }
+        sink.write('\n'); 
+      }
+      await sink.flush();
+      await sink.close();
+      measuredData.clear(); // Clear the measured data after saving it to the file
+      log('Data saved to file successfully');
+    } catch (e) {
+      log('Failed to save data to file: $e');
     }
   }
 }
