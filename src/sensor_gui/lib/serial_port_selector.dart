@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:sensor_gui/control/serial_port_handler.dart';
 import 'package:sensor_gui/sensor_data_visualiser.dart';
-import 'package:sensor_gui/serial_monitor.dart';
+//import 'package:sensor_gui/serial_monitor.dart';
 
 /// SerialPortSelector widget
 
@@ -23,8 +23,8 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
   String openCloseBtnLabel = 'Open Port';
   bool isPortOpen =
       false; // disables dropdown when port is open, prevents changing port while port is open
-  final GlobalKey<SerialMonitorState> _serialMonitorKey =
-      GlobalKey<SerialMonitorState>(); // Key to access the SerialMonitor widget
+  //final GlobalKey<SerialMonitorState> _serialMonitorKey =
+  //    GlobalKey<SerialMonitorState>(); // Key to access the SerialMonitor widget
   final GlobalKey<SensorDataVisualiserState> _sensorDataVisualiserKey =
       GlobalKey<
           SensorDataVisualiserState>(); // Key to access the SerialMonitor widget

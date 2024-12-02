@@ -26,9 +26,13 @@ SOFTWARE.
 import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:sensor_gui/serial_port_selector.dart';
+import 'package:window_size/window_size.dart';
 
-
-void main() => runApp(const ExampleApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  setWindowTitle('VL553L7 data visualiser');  
+  runApp(const ExampleApp());
+}
 
 class ExampleApp extends StatefulWidget {
   const ExampleApp({super.key});
@@ -77,30 +81,18 @@ class ExampleAppState extends State<ExampleApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      theme: ThemeData.light(), // Light theme
+      darkTheme: ThemeData.dark(), // Dark theme
+      themeMode: ThemeMode.dark, // Use system theme mode
+
       home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Flutter Serial Port example'),
-        ),
-        body: 
-        const SerialPortSelector(),
-      ),
-    );
-  }
-}
-
-class CardListTile extends StatelessWidget {
-  final String name;
-  final String? value;
-
-  const CardListTile(this.name, this.value, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        title: Text(value ?? 'N/A'),
-        subtitle: Text(name),
-      ),
+          appBar: AppBar(
+            title: const Text('Flutter Serial Port example'),
+          ),
+          body: const SizedBox(
+            width: 400,
+            child: SerialPortSelector(),
+          )),
     );
   }
 }

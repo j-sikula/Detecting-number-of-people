@@ -54,21 +54,29 @@ class SerialPortHandler {
 
       String previousData = '';
       decodedDataStream = reader.stream.map((data) {
-        previousData += String.fromCharCodes(data);
+        previousData += String.fromCharCodes(
+            data); // Append the received data to the previous data
         String currentData = '';
-        if(previousData.split('Data').length > 3) {
-          currentData = previousData.split('Data')[1];
-          previousData = 'Data${previousData.split('Data').last}';
+        if (previousData.split('Data').length > 3) {
+          // Check if there is one complete set of data
+          currentData = previousData.split('Data')[
+              1]; // Extract the current data from the previous data between 'Data' strings
+          previousData =
+              'Data${previousData.split('Data').last}'; // Update the previous data with the remaining data, some data can be lost
         }
         if (currentData.isNotEmpty) {
-            List<int> decodedData = currentData
-              .replaceAll(RegExp(r'\s+'), ' ')
+          List<int> decodedData = currentData
+              .replaceAll(RegExp(r'\s+'),
+                  ' ') // Replace multiple spaces with a single space
               .split(' ')
               .skip(1)
-              .map((e) => int.tryParse(e) ?? 0)
+              .map((e) => int.tryParse(e) ?? 0) // Convert the data to integers
               .toList();
-            if (decodedData.length >= 64) {
-            return decodedData.take(64).toList();
+          if (decodedData.length >= 64) {
+            // Check if the data has at least 64 elements
+            return decodedData
+                .take(64)
+                .toList(); // Return the first 64 elements
           }
         }
         return [];
