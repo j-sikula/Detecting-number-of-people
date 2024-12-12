@@ -23,62 +23,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
  */
 //
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
+import 'package:sensor_gui/control/google_sheets_api.dart';
 import 'package:sensor_gui/serial_port_selector.dart';
 import 'package:window_size/window_size.dart';
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:googleapis/sheets/v4.dart';
-import 'package:googleapis_auth/auth_io.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
- // setWindowTitle('VL553L7 data visualiser');
-  initGoogleAPI();
+  setWindowTitle('VL553L7 data visualiser');
+  GoogleSheetsApi api = GoogleSheetsApi();
+  api.initGoogleAPI();
   runApp(const ExampleApp());
-}
-
-void initGoogleAPI() async {
-  final credentialsJson = await rootBundle.loadString('assets/credentials/credentials.json');
-    final credentials = json.decode(credentialsJson);
-
-  // Define the scopes required
-  final scopes = [SheetsApi.spreadsheetsScope];
-
-  // Authenticate
-  final client = await clientViaServiceAccount(
-      ServiceAccountCredentials.fromJson(credentials), scopes);
-
-  // Create Sheets API instance
-  final sheetsApi = SheetsApi(client);
-
-  // Define the spreadsheet ID and range
-  const spreadsheetId = '1TzPddcXQPqZVjk_19nel91hl8BTlgOg8bBRZ543iEuM';
-  const range = 'Sheet1!A1';
-
-  // Define the values to upload
-  final values = [
-    ['Name', 'Age', 'City'],
-    ['John Doe', '30', 'New York'],
-    ['Jane Smith', '25', 'Los Angeles'],
-    ['Tom Brown', '40', 'Chicago'],
-  ];
-
-  // Create the value range
-  final valueRange = ValueRange.fromJson({
-    'range': range,
-    'values': values,
-  });
-
-  // Upload the data
-  await sheetsApi.spreadsheets.values
-      .update(valueRange, spreadsheetId, range, valueInputOption: 'RAW');
-
-  log('Data uploaded successfully');
-  // Initialize Google API
 }
 
 class ExampleApp extends StatefulWidget {
@@ -88,23 +45,6 @@ class ExampleApp extends StatefulWidget {
   ExampleAppState createState() => ExampleAppState();
 }
 
-extension IntToString on int {
-  String toHex() => '0x${toRadixString(16)}';
-  String toPadded([int width = 3]) => toString().padLeft(width, '0');
-  String toTransport() {
-    switch (this) {
-      case SerialPortTransport.usb:
-        return 'USB';
-      case SerialPortTransport.bluetooth:
-        return 'Bluetooth';
-      case SerialPortTransport.native:
-        return 'Native';
-      default:
-        return 'Unknown';
-    }
-  }
-}
-
 class ExampleAppState extends State<ExampleApp> {
   var availablePorts = [];
   final ScrollController _scrollController = ScrollController();
@@ -112,7 +52,7 @@ class ExampleAppState extends State<ExampleApp> {
   @override
   void initState() {
     super.initState();
-    //initPorts();
+    initPorts();
   }
 
   void initPorts() {
@@ -138,7 +78,7 @@ class ExampleAppState extends State<ExampleApp> {
           ),
           body: const SizedBox(
             width: 400,
-            child: Text("data")//SerialPortSelector(),
+            child: SerialPortSelector(),
           )),
     );
   }

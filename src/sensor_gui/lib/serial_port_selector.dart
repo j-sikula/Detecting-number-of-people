@@ -82,7 +82,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
   void onBtnSavePressed() async {
     String? path = await FilePicker.platform.saveFile();
     if (path != null) {
-      serialPortHandler!.saveDataToFile(path);
+      serialPortHandler!.decoder.saveDataToFile(path);
     }
     
   }

@@ -14,14 +14,13 @@
 #include "esp_log.h"
 #include "led_strip.h"
 #include "sdkconfig.h"
-#include "driver/i2c.h" // Inter-Integrated Circuit driver
+#include "driver/i2c.h"	 // Inter-Integrated Circuit driver
 #include "driver/uart.h" // UART driver
 #include "vl53l7cx_uld_api/vl53l7cx_api.h"
 #include "platform/platform.h"
 #include "wifi/wifi_controller.h"
 #include "nvs_flash.h" //non volatile storage
 #include <esp_sntp.h>
-
 
 static const char *TAG = "example";
 
@@ -36,77 +35,81 @@ static uint8_t s_led_state = 0;
 
 static led_strip_handle_t led_strip;
 
-void print_current_time() {
-    time_t rawtime;
-    struct tm * timeinfo;
-    char buffer[80];
+void print_current_time()
+{
+	time_t rawtime;
+	struct tm *timeinfo;
+	char buffer[80];
 
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
 
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	int milliseconds = tv.tv_usec / 1000;	
+	int milliseconds = tv.tv_usec / 1000;
 
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
-    printf("%s:%d\n", buffer, milliseconds);
+	strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+	printf("%s,%d\n", buffer, milliseconds);
 }
 
 static void blink_led(void)
 {
-    /* If the addressable LED is enabled */
-    if (s_led_state) {
-        /* Set the LED pixel using RGB from 0 (0%) to 255 (100%) for each color */
-        led_strip_set_pixel(led_strip, 0, 16, 16, 16);
-        /* Refresh the strip to send data */
-        led_strip_refresh(led_strip);
-    } else {
-        /* Set all LED off to clear all pixels */
-        led_strip_clear(led_strip);
-    }
+	/* If the addressable LED is enabled */
+	if (s_led_state)
+	{
+		/* Set the LED pixel using RGB from 0 (0%) to 255 (100%) for each color */
+		led_strip_set_pixel(led_strip, 0, 16, 16, 16);
+		/* Refresh the strip to send data */
+		led_strip_refresh(led_strip);
+	}
+	else
+	{
+		/* Set all LED off to clear all pixels */
+		led_strip_clear(led_strip);
+	}
 }
 
 static void configure_led(void)
 {
-    ESP_LOGI(TAG, "Example configured to blink addressable LED!");
-    /* LED strip initialization with the GPIO and pixels number*/
-    led_strip_config_t strip_config = {
-        .strip_gpio_num = BLINK_GPIO,
-        .max_leds = 1, // at least one LED on board
-    };
+	ESP_LOGI(TAG, "Example configured to blink addressable LED!");
+	/* LED strip initialization with the GPIO and pixels number*/
+	led_strip_config_t strip_config = {
+		.strip_gpio_num = BLINK_GPIO,
+		.max_leds = 1, // at least one LED on board
+	};
 #if CONFIG_BLINK_LED_STRIP_BACKEND_RMT
-    led_strip_rmt_config_t rmt_config = {
-        .resolution_hz = 10 * 1000 * 1000, // 10MHz
-        .flags.with_dma = false,
-    };
-    ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &led_strip));
+	led_strip_rmt_config_t rmt_config = {
+		.resolution_hz = 10 * 1000 * 1000, // 10MHz
+		.flags.with_dma = false,
+	};
+	ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &led_strip));
 #elif CONFIG_BLINK_LED_STRIP_BACKEND_SPI
-    led_strip_spi_config_t spi_config = {
-        .spi_bus = SPI2_HOST,
-        .flags.with_dma = true,
-    };
-    ESP_ERROR_CHECK(led_strip_new_spi_device(&strip_config, &spi_config, &led_strip));
+	led_strip_spi_config_t spi_config = {
+		.spi_bus = SPI2_HOST,
+		.flags.with_dma = true,
+	};
+	ESP_ERROR_CHECK(led_strip_new_spi_device(&strip_config, &spi_config, &led_strip));
 #else
 #error "unsupported LED strip backend"
 #endif
-    /* Set all LED off to clear all pixels */
-    led_strip_clear(led_strip);
+	/* Set all LED off to clear all pixels */
+	led_strip_clear(led_strip);
 }
 
 #elif CONFIG_BLINK_LED_GPIO
 
 static void blink_led(void)
 {
-    /* Set the GPIO level according to the state (LOW or HIGH)*/
-    gpio_set_level(BLINK_GPIO, s_led_state);
+	/* Set the GPIO level according to the state (LOW or HIGH)*/
+	gpio_set_level(BLINK_GPIO, s_led_state);
 }
 
 static void configure_led(void)
 {
-    ESP_LOGI(TAG, "Example configured to blink GPIO LED!");
-    gpio_reset_pin(BLINK_GPIO);
-    /* Set the GPIO as a push/pull output */
-    gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
+	ESP_LOGI(TAG, "Example configured to blink GPIO LED!");
+	gpio_reset_pin(BLINK_GPIO);
+	/* Set the GPIO as a push/pull output */
+	gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
 }
 
 #else
@@ -118,27 +121,28 @@ void vWifiTask();
 void app_main(void)
 {
 
-    /* Configure the peripheral according to the LED type */
-    configure_led();
+	/* Configure the peripheral according to the LED type */
+	configure_led();
 
 	print_current_time();
-    
-    // Start the i2c scanner task
+
+	// Start the i2c scanner task
 	xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 5, NULL);
 	xTaskCreate(vWifiTask, "wifi_task", 4096, NULL, 5, NULL);
 
-    while (1) {
-        //ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF");
-        blink_led();
-        /* Toggle the LED state */
-        s_led_state = !s_led_state;
-        vTaskDelay(CONFIG_BLINK_PERIOD / portTICK_PERIOD_MS);
-    }
+	while (1)
+	{
+		// ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF");
+		blink_led();
+		/* Toggle the LED state */
+		s_led_state = !s_led_state;
+		vTaskDelay(CONFIG_BLINK_PERIOD / portTICK_PERIOD_MS);
+	}
 }
 
 void vTaskLoop()
 {
-    /*********************************/
+	/*********************************/
 	/*   VL53L7CX ranging variables  */
 	/*********************************/
 
@@ -248,16 +252,16 @@ void vTaskLoop()
 				vl53l7cx_get_ranging_data(&Dev, &Results);
 
 				/* As the sensor is set in 8x8 mode by default, we have a total
-				 * of 64 zones to print. 
+				 * of 64 zones to print.
 				 */
-				
+
 				printf("\nData\n");
 				print_current_time();
 				for (i = 0; i < VL53L7CX_RESOLUTION_8X8; i++)
 				{
 					printf("%4d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i]);
 				}
-				
+
 				loop++;
 			}
 
@@ -273,36 +277,38 @@ void vTaskLoop()
 }
 
 // Set local time from Wi-Fi
-	void obtain_time(void);
-	void initialize_sntp(void);
+void obtain_time(void);
+void initialize_sntp(void);
 
-	void obtain_time(void)
+void obtain_time(void)
+{
+	initialize_sntp();
+	time_t now = 0;
+	struct tm timeinfo = {0};
+	int retry = 0;
+	const int retry_count = 10;
+
+	while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count)
 	{
-		initialize_sntp();
-		time_t now = 0;
-		struct tm timeinfo = { 0 };
-		int retry = 0;
-		const int retry_count = 10;
-
-		while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
-			ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
-			vTaskDelay(2000 / portTICK_PERIOD_MS);
-			time(&now);
-			localtime_r(&now, &timeinfo);
-		}
-
-		if (retry == retry_count) {
-			ESP_LOGE(TAG, "Failed to obtain time");
-		}
+		ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+		vTaskDelay(2000 / portTICK_PERIOD_MS);
+		time(&now);
+		localtime_r(&now, &timeinfo);
 	}
 
-	void initialize_sntp(void)
+	if (retry == retry_count)
 	{
-		ESP_LOGI(TAG, "Initializing SNTP");
-		esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
-		esp_sntp_setservername(0, "pool.ntp.org");
-		esp_sntp_init();
+		ESP_LOGE(TAG, "Failed to obtain time");
 	}
+}
+
+void initialize_sntp(void)
+{
+	ESP_LOGI(TAG, "Initializing SNTP");
+	esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+	esp_sntp_setservername(0, "pool.ntp.org");
+	esp_sntp_init();
+}
 
 void vWifiTask()
 {
@@ -311,7 +317,4 @@ void vWifiTask()
 	// Obtain time after connecting to Wi-Fi
 	obtain_time();
 	vTaskDelete(NULL);
-	
-
-	
 }
