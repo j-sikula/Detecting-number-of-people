@@ -7,6 +7,7 @@
    CONDITIONS OF ANY KIND, either express or implied.
 */
 #include <stdio.h>
+#include <time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
@@ -17,6 +18,9 @@
 #include "driver/uart.h" // UART driver
 #include "vl53l7cx_uld_api/vl53l7cx_api.h"
 #include "platform/platform.h"
+#include "wifi/wifi_controller.h"
+#include "nvs_flash.h" //non volatile storage
+#include <esp_sntp.h>
 
 
 static const char *TAG = "example";
@@ -31,6 +35,22 @@ static uint8_t s_led_state = 0;
 #ifdef CONFIG_BLINK_LED_STRIP
 
 static led_strip_handle_t led_strip;
+
+void print_current_time() {
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	int milliseconds = tv.tv_usec / 1000;	
+
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+    printf("%s:%d\n", buffer, milliseconds);
+}
 
 static void blink_led(void)
 {
@@ -94,14 +114,18 @@ static void configure_led(void)
 #endif
 
 void vTaskLoop();
+void vWifiTask();
 void app_main(void)
 {
 
     /* Configure the peripheral according to the LED type */
     configure_led();
+
+	print_current_time();
     
     // Start the i2c scanner task
 	xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 5, NULL);
+	xTaskCreate(vWifiTask, "wifi_task", 4096, NULL, 5, NULL);
 
     while (1) {
         //ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF");
@@ -223,10 +247,12 @@ void vTaskLoop()
 			{
 				vl53l7cx_get_ranging_data(&Dev, &Results);
 
-				/* As the sensor is set in 4x4 mode by default, we have a total
-				 * of 16 zones to print. For this example, only the data of first zone are
-				 * print */
+				/* As the sensor is set in 8x8 mode by default, we have a total
+				 * of 64 zones to print. 
+				 */
+				
 				printf("\nData\n");
+				print_current_time();
 				for (i = 0; i < VL53L7CX_RESOLUTION_8X8; i++)
 				{
 					printf("%4d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i]);
@@ -244,4 +270,48 @@ void vTaskLoop()
 	status = vl53l7cx_stop_ranging(&Dev);
 	// Delete this task if it exits from the loop above
 	vTaskDelete(NULL);
+}
+
+// Set local time from Wi-Fi
+	void obtain_time(void);
+	void initialize_sntp(void);
+
+	void obtain_time(void)
+	{
+		initialize_sntp();
+		time_t now = 0;
+		struct tm timeinfo = { 0 };
+		int retry = 0;
+		const int retry_count = 10;
+
+		while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
+			ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+			vTaskDelay(2000 / portTICK_PERIOD_MS);
+			time(&now);
+			localtime_r(&now, &timeinfo);
+		}
+
+		if (retry == retry_count) {
+			ESP_LOGE(TAG, "Failed to obtain time");
+		}
+	}
+
+	void initialize_sntp(void)
+	{
+		ESP_LOGI(TAG, "Initializing SNTP");
+		esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+		esp_sntp_setservername(0, "pool.ntp.org");
+		esp_sntp_init();
+	}
+
+void vWifiTask()
+{
+	nvs_flash_init();
+	wifi_task(NULL);
+	// Obtain time after connecting to Wi-Fi
+	obtain_time();
+	vTaskDelete(NULL);
+	
+
+	
 }
