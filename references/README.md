@@ -42,3 +42,8 @@ Matrix partitioned into 4 slices (zones), presence of person in zone detected, e
 # Image-based solutions
 * [Automated visitor and wildlife monitoring with camera traps and machine learning](https://doi.org/10.1002/rse2.367)
 * [Algorithm for Accurate People Counting in Conference Halls](https://ieeexplore.ieee.org/document/10516342)
+
+
+# References to libraries
+
+[Google sheet API limits](https://developers.google.com/sheets/api/limits) are cost free
