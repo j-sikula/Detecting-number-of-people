@@ -1,14 +1,24 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:intl/intl.dart';
+import 'package:sensor_gui/control/google_sheets_api.dart';
 
 /// Decodes the received data
 /// stores the data in a list of [Measurement]
 class DataDecoder {
   String previousData = '';
   List<Measurement> measurements = [];
+  GoogleSheetsApi api = GoogleSheetsApi();
+
+  DataDecoder() {
+    api.initGoogleAPI();
+    Timer.periodic(const Duration(seconds: 10), (timer) {
+      uploadDataToGoogleSheets();
+    });
+  }
 
   Measurement? decode(Uint8List data) {
     previousData += String.fromCharCodes(
@@ -100,6 +110,20 @@ class DataDecoder {
     } catch (e) {
       log('Failed to save data to file: $e');
     }
+  }
+
+  void uploadDataToGoogleSheets() {
+    List<List<String>> parsedMeasurements = [];
+    for (Measurement measurement in measurements) {
+      List<String> parsedMeasurement = [];
+      parsedMeasurement.add(measurement.time.toIso8601String());
+      parsedMeasurement
+          .addAll(measurement.data.map((e) => e.toString()).toList());
+      parsedMeasurements.add(parsedMeasurement);
+    }
+   
+    api.appendData(parsedMeasurements);
+    measurements.clear();
   }
 }
 
