@@ -15,14 +15,14 @@ class SensorDataVisualiser extends StatefulWidget {
 class SensorDataVisualiserState extends State<SensorDataVisualiser> {
   List<int> sensorData = List.filled(64, 0);
   bool startListening = false;
-   StreamSubscription<List<int>>? decodedDataSubscription;
+  StreamSubscription<List<int>>? decodedDataSubscription;
 
   /// Enables listening to the received data
   void enableListening() {
     startListening = true;
   }
 
-   /// Stops listening to the received data
+  /// Stops listening to the received data
   void stopListening() {
     decodedDataSubscription?.cancel();
   }
@@ -30,7 +30,8 @@ class SensorDataVisualiserState extends State<SensorDataVisualiser> {
   @override
   Widget build(BuildContext context) {
     if (widget.serialPortHandler != null && startListening) {
-      decodedDataSubscription = widget.serialPortHandler!.decodedDataStream!.listen((data) {
+      decodedDataSubscription =
+          widget.serialPortHandler!.decodedDataStream!.listen((data) {
         if (data.length == 64) {
           setState(() {
             sensorData = data;
@@ -50,7 +51,7 @@ class SensorDataVisualiserState extends State<SensorDataVisualiser> {
           margin: const EdgeInsets.all(4.0),
           height: 5,
           width: 5,
-          color: Colors.blueAccent,
+          color: Color.lerp(const Color.fromARGB(255, 14, 5, 141), const Color.fromARGB(255, 255, 17, 0), sensorData[index] / 4000),
           child: Center(
             child: Text(
               '${sensorData[index]}',
