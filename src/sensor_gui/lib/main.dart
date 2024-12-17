@@ -24,15 +24,18 @@ SOFTWARE.
  */
 //
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:sensor_gui/control/google_sheets_api.dart';
 import 'package:sensor_gui/serial_port_selector.dart';
 import 'package:window_size/window_size.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  setWindowTitle('VL553L7 data visualiser');
+  if (Platform.isWindows) {
+    setWindowTitle('VL553L7 data visualiser');
+  }
   GoogleSheetsApi api = GoogleSheetsApi();
   api.initGoogleAPI();
   runApp(const ExampleApp());
@@ -48,16 +51,6 @@ class ExampleApp extends StatefulWidget {
 class ExampleAppState extends State<ExampleApp> {
   var availablePorts = [];
   final ScrollController _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    initPorts();
-  }
-
-  void initPorts() {
-    setState(() => availablePorts = SerialPort.availablePorts);
-  }
 
   @override
   void dispose() {

@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import 'package:sensor_gui/control/serial_port_handler.dart';
+import 'package:sensor_gui/control/serial_port_handler_android.dart';
 import 'package:sensor_gui/sensor_data_visualiser.dart';
 //import 'package:sensor_gui/serial_monitor.dart';
 
@@ -33,23 +36,40 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
   @override
   void initState() {
     super.initState();
-    _getAvailablePorts();
+    setAvailablePorts();
   }
 
-  void _getAvailablePorts() {
+  setAvailablePorts() async {
+    List<String> availablePorts = await getAvailablePorts();
     setState(() {
-      _availablePorts = SerialPort.availablePorts;
+      _availablePorts = availablePorts;
     });
   }
 
+  /// Gets the available ports
+  Future<List<String>> getAvailablePorts() async {
+    if (Platform.isWindows) {
+      return SerialPort.availablePorts;
+    } else if (Platform.isAndroid) {
+      return await getAvailablePortsAndroid();
+    }
+    return [];
+  }
+
   /// Callback function to open and close the selected port
-  void onPressedOpenAndClosePort() {
+  void onPressedOpenAndClosePort() async {
     if (_selectedPort != null) {
       if (serialPortHandler == null ||
           serialPortHandler!.portName != _selectedPort) {
         // creates a new instance of SerialPortHandler class
         // if the serialPortHandler is not initialized or the port is changed
-        serialPortHandler = SerialPortHandler(widget.baudRate, _selectedPort!);
+        if (Platform.isWindows) {
+          serialPortHandler =
+              SerialPortHandler(widget.baudRate, _selectedPort!);
+        } else if (Platform.isAndroid) {
+          serialPortHandler =
+              SerialPortHandlerAndroid(widget.baudRate, _selectedPort!);
+        }
       }
     } else {
       // if no port is selected
@@ -58,7 +78,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
 
     if (!serialPortHandler!.isPortOpen) {
       //to open the port
-      if (serialPortHandler!.openPort()) {
+      if (await serialPortHandler!.openPort()) {
         // _serialMonitorKey.currentState!.enableListening();
         _sensorDataVisualiserKey.currentState!.enableListening();
         setState(() {
@@ -67,7 +87,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
       }
     } else {
       //to close the port
-      if (serialPortHandler!.closePort()) {
+      if (await serialPortHandler!.closePort()) {
         _sensorDataVisualiserKey.currentState!.stopListening();
         // _serialMonitorKey.currentState!.stopListening();
 
@@ -84,7 +104,6 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
     if (path != null) {
       serialPortHandler!.decoder.saveDataToFile(path);
     }
-    
   }
 
   @override
