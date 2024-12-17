@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:intl/intl.dart';
 import 'package:sensor_gui/control/google_sheets_api.dart';
+import 'package:sensor_gui/control/people_counter.dart';
 
 /// Decodes the received data
 /// stores the data in a list of [Measurement]
@@ -12,8 +13,10 @@ class DataDecoder {
   String previousData = '';
   List<Measurement> measurements = [];
   GoogleSheetsApi api = GoogleSheetsApi();
+  PeopleCounter peopleCounter = PeopleCounter();
 
   DataDecoder() {
+
     api.initGoogleAPI();
     Timer.periodic(const Duration(seconds: 10), (timer) {
       uploadDataToGoogleSheets();
@@ -68,6 +71,7 @@ class DataDecoder {
         Measurement currentMeasurement =
             Measurement(decodedData, timeOfMeasurement);
         measurements.add(currentMeasurement);
+        peopleCounter.processMeasurement(currentMeasurement);
         return currentMeasurement;
       }
     }

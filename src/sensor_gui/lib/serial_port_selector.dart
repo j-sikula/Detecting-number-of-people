@@ -132,6 +132,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
                 }).toList(),
               ),
             ),
+            ElevatedButton(onPressed: onBtnRefreshPressed, child: const Icon(Icons.refresh)),
             Expanded(
               child: Container(
                 margin: const EdgeInsets.only(left: 10),
@@ -157,5 +158,9 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
         ),
       ],
     );
+  }
+
+  void onBtnRefreshPressed() {
+    setAvailablePorts();
   }
 }
