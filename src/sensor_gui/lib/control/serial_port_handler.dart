@@ -17,10 +17,9 @@ class SerialPortHandler {
   DataDecoder decoder = DataDecoder();
 
   // Constructor
-  SerialPortHandler(this.baudRate, this.portName) {
-    // Initialize the serial port
-    serialPort = SerialPort(portName);
-  }
+  SerialPortHandler(this.baudRate, this.portName);
+    
+  
 
   /// Closes the serial port
   Future<bool> closePort() async{

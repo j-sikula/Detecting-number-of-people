@@ -27,7 +27,6 @@ SOFTWARE.
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:sensor_gui/control/google_sheets_api.dart';
 import 'package:sensor_gui/serial_port_selector.dart';
 import 'package:window_size/window_size.dart';
 
@@ -36,8 +35,6 @@ void main() {
   if (Platform.isWindows) {
     setWindowTitle('VL553L7 data visualiser');
   }
-  GoogleSheetsApi api = GoogleSheetsApi();
-  api.initGoogleAPI();
   runApp(const ExampleApp());
 }
 

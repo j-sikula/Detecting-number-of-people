@@ -6,7 +6,8 @@ import 'package:flutter/services.dart' show rootBundle;
 
 class GoogleSheetsApi {
   SheetsApi? sheetsApi;
-  final spreadsheetId = '1TzPddcXQPqZVjk_19nel91hl8BTlgOg8bBRZ543iEuM';
+  final String spreadsheetId;
+  GoogleSheetsApi(this.spreadsheetId);
 
   void initGoogleAPI() async {
     final credentialsJson =
@@ -75,5 +76,9 @@ class GoogleSheetsApi {
     } catch (e) {
       log('Failed to append data: $e');
     }
+  }
+
+  Future<void> appendDataRow(List<String> data) async {
+    return appendData([data]);
   }
 }

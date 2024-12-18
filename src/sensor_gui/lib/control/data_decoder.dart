@@ -9,19 +9,22 @@ import 'package:sensor_gui/control/people_counter.dart';
 
 /// Decodes the received data
 /// stores the data in a list of [Measurement]
+/// used in the [SerialPortHandler] class
 class DataDecoder {
   String previousData = '';
   List<Measurement> measurements = []; // List of non backed-up measurements
   List<Measurement> allMeasurements = []; // List of all measurements
-  GoogleSheetsApi api = GoogleSheetsApi();
-  PeopleCounter peopleCounter = PeopleCounter();
-
+  GoogleSheetsApi apiRawDataCloud = GoogleSheetsApi('1TzPddcXQPqZVjk_19nel91hl8BTlgOg8bBRZ543iEuM');
+  GoogleSheetsApi apiPeopleCounter = GoogleSheetsApi('1SMUomRFOupgDCK7eLoi8eb6Y_97LJ3NA8j68mztiyTw');
+  late PeopleCounter peopleCounter;
   DataDecoder() {
 
-    api.initGoogleAPI();
+    apiRawDataCloud.initGoogleAPI();
     Timer.periodic(const Duration(seconds: 10), (timer) {
       uploadDataToGoogleSheets();
     });
+    apiPeopleCounter.initGoogleAPI();
+    peopleCounter = PeopleCounter(apiPeopleCounter);
   }
 
   Measurement? decode(Uint8List data) {
@@ -73,8 +76,9 @@ class DataDecoder {
             Measurement(decodedData, timeOfMeasurement);
         measurements.add(currentMeasurement);
         allMeasurements.add(currentMeasurement);
-        peopleCounter.processMeasurement(currentMeasurement);
-        return currentMeasurement;
+        Measurement toReturn = Measurement(peopleCounter.processMeasurement(currentMeasurement), timeOfMeasurement);
+        
+        return toReturn;
       }
     }
     return null;
@@ -127,7 +131,7 @@ class DataDecoder {
       parsedMeasurements.add(parsedMeasurement);
     }
    
-    api.appendData(parsedMeasurements);
+    apiRawDataCloud.appendData(parsedMeasurements);
     measurements.clear();
   }
 

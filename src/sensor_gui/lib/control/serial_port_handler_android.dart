@@ -31,13 +31,12 @@ class SerialPortHandlerAndroid extends SerialPortHandler {
 
   /// Serial port object
   UsbPort? usbPort;
-  late StreamSubscription<Uint8List> _subscription;
+  
 
   /// Closes the serial port
 
   @override
-  Future<bool> closePort() async {
-    await _subscription.cancel();
+  Future<bool> closePort() async {    
     bool closeResult = await usbPort!.close();
     if (closeResult) {
       isPortOpen = false;
