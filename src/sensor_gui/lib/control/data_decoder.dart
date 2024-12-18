@@ -11,7 +11,8 @@ import 'package:sensor_gui/control/people_counter.dart';
 /// stores the data in a list of [Measurement]
 class DataDecoder {
   String previousData = '';
-  List<Measurement> measurements = [];
+  List<Measurement> measurements = []; // List of non backed-up measurements
+  List<Measurement> allMeasurements = []; // List of all measurements
   GoogleSheetsApi api = GoogleSheetsApi();
   PeopleCounter peopleCounter = PeopleCounter();
 
@@ -71,6 +72,7 @@ class DataDecoder {
         Measurement currentMeasurement =
             Measurement(decodedData, timeOfMeasurement);
         measurements.add(currentMeasurement);
+        allMeasurements.add(currentMeasurement);
         peopleCounter.processMeasurement(currentMeasurement);
         return currentMeasurement;
       }
@@ -99,7 +101,7 @@ class DataDecoder {
       }
       sink.write('\n');
       // Write the data to the file
-      for (var measurement in measurements) {
+      for (var measurement in allMeasurements) {
         sink.write('${measurement.time.toIso8601String()};');
         for (var data in measurement.data) {
           sink.write('$data;');
@@ -108,8 +110,7 @@ class DataDecoder {
       }
       await sink.flush();
       await sink.close();
-      measurements
-          .clear(); // Clear the measured data after saving it to the file
+      
       log('Data saved to file successfully');
     } catch (e) {
       log('Failed to save data to file: $e');
@@ -128,6 +129,13 @@ class DataDecoder {
    
     api.appendData(parsedMeasurements);
     measurements.clear();
+  }
+
+  Measurement? getLatestMeasurement() {
+    if (allMeasurements.isNotEmpty) {
+      return measurements.last;
+    }
+    return null;
   }
 }
 

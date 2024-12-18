@@ -15,11 +15,15 @@ class GoogleSheetsApi {
 
     // Define the scopes required
     final scopes = [SheetsApi.spreadsheetsScope];
-
-    // Authenticate
-    final client = await clientViaServiceAccount(
-        ServiceAccountCredentials.fromJson(credentials), scopes);
-
+    AutoRefreshingAuthClient? client;
+    try {
+      // Authenticate
+      client = await clientViaServiceAccount(
+          ServiceAccountCredentials.fromJson(credentials), scopes);
+    } catch (e) {
+      log('Failed to authenticate: $e');
+      return;
+    }
     // Create Sheets API instance
     sheetsApi = SheetsApi(client);
   }
@@ -46,27 +50,30 @@ class GoogleSheetsApi {
       'range': range,
       'values': values,
     });
+    try {
+      // Upload the data
+      await sheetsApi!.spreadsheets.values
+          .update(valueRange, spreadsheetId, range, valueInputOption: 'RAW');
 
-    // Upload the data
-    await sheetsApi!.spreadsheets.values
-        .update(valueRange, spreadsheetId, range, valueInputOption: 'RAW');
+      log('Last upload time updated successfully');
 
-    log('Last upload time updated successfully');
+      range = 'Sheet1';
 
-    range = 'Sheet1';
+      valueRange = ValueRange.fromJson({
+        'range': range,
+        'values': newData,
+      });
 
-    valueRange = ValueRange.fromJson({
-      'range': range,
-      'values': newData,
-    });
+      await sheetsApi!.spreadsheets.values.append(
+        valueRange,
+        spreadsheetId,
+        range,
+        valueInputOption: 'RAW',
+      );
 
-    await sheetsApi!.spreadsheets.values.append(
-      valueRange,
-      spreadsheetId,
-      range,
-      valueInputOption: 'RAW',
-    );
-
-    log('Data appended successfully');
+      log('Data appended successfully');
+    } catch (e) {
+      log('Failed to append data: $e');
+    }
   }
 }

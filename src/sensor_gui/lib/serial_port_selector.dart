@@ -3,8 +3,10 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
+import 'package:sensor_gui/control/data_decoder.dart';
 import 'package:sensor_gui/control/serial_port_handler.dart';
 import 'package:sensor_gui/control/serial_port_handler_android.dart';
+import 'package:sensor_gui/control/serial_port_handler_windows.dart';
 import 'package:sensor_gui/sensor_data_visualiser.dart';
 //import 'package:sensor_gui/serial_monitor.dart';
 
@@ -65,7 +67,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
         // if the serialPortHandler is not initialized or the port is changed
         if (Platform.isWindows) {
           serialPortHandler =
-              SerialPortHandler(widget.baudRate, _selectedPort!);
+              SerialPortHandlerWindows(widget.baudRate, _selectedPort!);
         } else if (Platform.isAndroid) {
           serialPortHandler =
               SerialPortHandlerAndroid(widget.baudRate, _selectedPort!);
@@ -151,6 +153,10 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
           onPressed: onBtnSavePressed,
           child: const Text('Save to File'),
         ),
+        ElevatedButton(
+          onPressed: onBtnSetSurfacePressed,
+          child: const Text('Set Surface'),
+        ),
         Expanded(
           child: SensorDataVisualiser(
               key: _sensorDataVisualiserKey,
@@ -163,4 +169,13 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
   void onBtnRefreshPressed() {
     setAvailablePorts();
   }
+
+  void onBtnSetSurfacePressed() {
+    Measurement? lastMeasurement = serialPortHandler?.decoder.getLatestMeasurement();
+    if (lastMeasurement != null) {
+      serialPortHandler?.decoder.peopleCounter.setSurface(lastMeasurement);
+    }
+    
+  
+}
 }

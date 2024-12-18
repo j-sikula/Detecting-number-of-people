@@ -29,7 +29,7 @@ class SensorDataVisualiserState extends State<SensorDataVisualiser> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.serialPortHandler != null && startListening) {
+    if (widget.serialPortHandler != null && widget.serialPortHandler!.decodedDataStream != null && startListening) {
       decodedDataSubscription =
           widget.serialPortHandler!.decodedDataStream!.listen((data) {
         if (data.length == 64) {

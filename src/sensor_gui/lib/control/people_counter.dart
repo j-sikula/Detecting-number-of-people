@@ -18,7 +18,7 @@ class PeopleCounter {
     }
     List<int> heightData = List.generate(background.length, (index) => background[index] - measurement.data[index]);
     for (int i = 0; i < nZones; i++) {
-      int maxHeight = max(heightData.sublist((i*64/nZones) as int, ((i+1)*64/nZones) as int?));
+      int maxHeight = max(heightData.sublist((i*64~/nZones), ((i+1)*64~/nZones)));
       if (maxHeight > heightTreshold) {
 
         if (lastPosition == 1 && i == 0) {
@@ -43,5 +43,9 @@ class PeopleCounter {
       }
     }
     return maxValue; 
+  }
+
+  void setSurface(Measurement measurement) {
+    background = measurement.data;
   }
 }
