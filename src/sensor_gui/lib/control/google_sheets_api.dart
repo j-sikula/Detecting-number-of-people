@@ -37,9 +37,16 @@ class GoogleSheetsApi {
       return;
     }
 
-    /// Update last upload time
+    // Prepare the sheet for the day if it does not exist
+    bool isSheetPrepared = await createSheetIfNotExists(getCurrentDate()); 
 
-    String range = 'Sheet1!C1';
+    if (!isSheetPrepared) {
+      log('Failed to prepare the sheet');
+      return;
+    }
+
+    // Update last upload time
+    String range = '${getCurrentDate()}!C1';
 
     // Define the values to upload
     final values = [
@@ -58,7 +65,7 @@ class GoogleSheetsApi {
 
       log('Last upload time updated successfully');
 
-      range = 'Sheet1';
+      range = getCurrentDate(); // sheet name
 
       valueRange = ValueRange.fromJson({
         'range': range,
@@ -80,5 +87,100 @@ class GoogleSheetsApi {
 
   Future<void> appendDataRow(List<String> data) async {
     return appendData([data]);
+  }
+
+  Future<bool> createSheetIfNotExists(String sheetTitle) async {
+    if (sheetsApi == null) {
+      log('Google Sheets API is not initialized');
+      return false;
+    }
+
+    try {
+      final spreadsheet = await sheetsApi!.spreadsheets.get(spreadsheetId);
+      final sheetExists = spreadsheet.sheets!
+          .any((sheet) => sheet.properties!.title == sheetTitle);
+
+      if (!sheetExists) {
+        final request = {
+          'addSheet': {
+            'properties': {
+              'title': sheetTitle,
+            },
+          },
+        };
+
+        final batchUpdateRequest = BatchUpdateSpreadsheetRequest.fromJson({
+          'requests': [request],
+        });
+
+        await sheetsApi!.spreadsheets
+            .batchUpdate(batchUpdateRequest, spreadsheetId);
+        log('Sheet "$sheetTitle" created successfully');
+
+        await prepareHeader(sheetTitle);
+      } else {
+        return true;
+      }
+    } catch (e) {
+      log('Failed to create sheet: $e');
+      return false;
+    }
+    return true;
+  }
+
+  
+  /// inserts the header to the sheet
+  /// throws an error if the header is not prepared
+  Future<void> prepareHeader(String sheetName) {
+    if (sheetsApi == null) {
+      log('Google Sheets API is not initialized');
+      return Future.value();
+    }
+
+    String range = '$sheetName!A1';
+
+    // Define the values to upload
+    final values = [
+      ['Data measured on VL53L7CX', 'Last Upload'],
+    ];
+
+    // Create the value range
+    ValueRange valueRange = ValueRange.fromJson({
+      'range': range,
+      'values': values,
+    });
+
+    // Upload the data
+    sheetsApi!.spreadsheets.values
+        .update(valueRange, spreadsheetId, range, valueInputOption: 'RAW');
+
+    log('Last upload time updated successfully');
+
+    final headerRangeSecond = '$sheetName!A2';
+    final List<String> zonesHeaders = List.generate(64, (index) => 'Zone $index');
+    final headerValuesSecond = [
+      ['UTC time', ...zonesHeaders],  // UTC time and zone headers
+    ];
+
+    final headerValueRangeSecond = ValueRange.fromJson({
+      'range': headerRangeSecond,
+      'values': headerValuesSecond,
+    });
+
+    return sheetsApi!.spreadsheets.values.update(
+      headerValueRangeSecond,
+      spreadsheetId,
+      headerRangeSecond,
+      valueInputOption: 'RAW',
+    );
+  }
+
+  /// Returns the current date in the format 'year_month_day'
+  /// used for sheet names
+  String getCurrentDate() {
+    String year = DateTime.now().year.toString();
+    String month = DateTime.now().month.toString();
+    String day = DateTime.now().day.toString();
+    return '${year}_${month}_$day';
   }
 }

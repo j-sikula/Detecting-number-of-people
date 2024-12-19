@@ -88,7 +88,7 @@ class PeopleCounter {
 
 extension on List<bool> {
   bool equals(List<bool> zoneEntered) {
-    for (int i = 0; i < this.length; i++) {
+    for (int i = 0; i < length; i++) {
       if (this[i] != zoneEntered[i]) {
         return false;
       }

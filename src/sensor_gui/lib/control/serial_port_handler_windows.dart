@@ -6,7 +6,9 @@ import 'package:sensor_gui/control/serial_port_handler.dart';
 class SerialPortHandlerWindows extends SerialPortHandler {
   SerialPortReader? reader;
 
-  SerialPortHandlerWindows(super.baudRate, super.portName);
+  SerialPortHandlerWindows(super.baudRate, super.portName){
+    serialPort = SerialPort(portName);
+  }
 
   @override
   Future<bool> openPort() async {
