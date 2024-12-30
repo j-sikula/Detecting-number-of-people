@@ -7,7 +7,9 @@ import 'package:flutter/services.dart' show rootBundle;
 class GoogleSheetsApi {
   SheetsApi? sheetsApi;
   final String spreadsheetId;
-  GoogleSheetsApi(this.spreadsheetId);
+  bool
+      isSheetForRawData; // sheet for raw data has different header (65 columns)
+  GoogleSheetsApi(this.spreadsheetId, this.isSheetForRawData);
 
   void initGoogleAPI() async {
     final credentialsJson =
@@ -96,11 +98,13 @@ class GoogleSheetsApi {
     }
 
     try {
+      // Check if the sheet exists
       final spreadsheet = await sheetsApi!.spreadsheets.get(spreadsheetId);
       final sheetExists = spreadsheet.sheets!
           .any((sheet) => sheet.properties!.title == sheetTitle);
 
       if (!sheetExists) {
+        // Create the sheet
         final request = {
           'addSheet': {
             'properties': {
@@ -128,7 +132,6 @@ class GoogleSheetsApi {
     return true;
   }
 
-  
   /// inserts the header to the sheet
   /// throws an error if the header is not prepared
   Future<void> prepareHeader(String sheetName) {
@@ -140,10 +143,23 @@ class GoogleSheetsApi {
     String range = '$sheetName!A1';
 
     // Define the values to upload
-    final values = [
-      ['Data measured on VL53L7CX', 'Last Upload'],
+    final List<List<String>> values;
+    if (isSheetForRawData){
+      values = [
+      [
+        'Data measured on VL53L7CX',
+        'Last Upload'
+      ],
     ];
-
+    } else {
+      values = [
+      [
+        'Processed data',
+        'Last Upload'
+      ],
+    ];
+    }
+    
     // Create the value range
     ValueRange valueRange = ValueRange.fromJson({
       'range': range,
@@ -157,9 +173,14 @@ class GoogleSheetsApi {
     log('Last upload time updated successfully');
 
     final headerRangeSecond = '$sheetName!A2';
-    final List<String> zonesHeaders = List.generate(64, (index) => 'Zone $index');
+    List<String> zonesHeaders;
+    if (isSheetForRawData) {
+      zonesHeaders = List.generate(64, (index) => 'Zone $index');
+    } else {
+      zonesHeaders = ["People count"];
+    }
     final headerValuesSecond = [
-      ['UTC time', ...zonesHeaders],  // UTC time and zone headers
+      ['UTC time', ...zonesHeaders], // UTC time and zone headers or label people count
     ];
 
     final headerValueRangeSecond = ValueRange.fromJson({

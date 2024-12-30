@@ -14,8 +14,8 @@ class DataDecoder {
   String previousData = '';
   List<Measurement> measurements = []; // List of non backed-up measurements
   List<Measurement> allMeasurements = []; // List of all measurements
-  GoogleSheetsApi apiRawDataCloud = GoogleSheetsApi('1TzPddcXQPqZVjk_19nel91hl8BTlgOg8bBRZ543iEuM');
-  GoogleSheetsApi apiPeopleCounter = GoogleSheetsApi('1SMUomRFOupgDCK7eLoi8eb6Y_97LJ3NA8j68mztiyTw');
+  GoogleSheetsApi apiRawDataCloud = GoogleSheetsApi('1TzPddcXQPqZVjk_19nel91hl8BTlgOg8bBRZ543iEuM', true);
+  GoogleSheetsApi apiPeopleCounter = GoogleSheetsApi('1SMUomRFOupgDCK7eLoi8eb6Y_97LJ3NA8j68mztiyTw', false);
   late PeopleCounter peopleCounter;
   DataDecoder() {
 
@@ -137,7 +137,7 @@ class DataDecoder {
 
   Measurement? getLatestMeasurement() {
     if (allMeasurements.isNotEmpty) {
-      return measurements.last;
+      return allMeasurements.last;
     }
     return null;
   }
