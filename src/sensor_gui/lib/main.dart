@@ -60,11 +60,11 @@ class ExampleAppState extends State<ExampleApp> {
     return MaterialApp(
       theme: ThemeData.light(), // Light theme
       darkTheme: ThemeData.dark(), // Dark theme
-      themeMode: ThemeMode.dark, // Use system theme mode
+      themeMode: ThemeMode.system, // Use system theme mode
 
       home: Scaffold(
           appBar: AppBar(
-            title: const Text('Flutter Serial Port example'),
+            title: const Text('People counter'),
           ),
           body: const SizedBox(
             width: 400,

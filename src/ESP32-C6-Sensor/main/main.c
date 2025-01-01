@@ -35,6 +35,8 @@ static uint8_t s_led_state = 0;
 
 static led_strip_handle_t led_strip;
 
+static uint8_t green_led_intensity = 16;
+
 void print_current_time()
 {
 	time_t rawtime;
@@ -58,7 +60,7 @@ static void blink_led(void)
 	if (s_led_state)
 	{
 		/* Set the LED pixel using RGB from 0 (0%) to 255 (100%) for each color */
-		led_strip_set_pixel(led_strip, 0, 16, 16, 16);
+		led_strip_set_pixel(led_strip, 0, 16, green_led_intensity, 16);
 		/* Refresh the strip to send data */
 		led_strip_refresh(led_strip);
 	}
@@ -222,6 +224,12 @@ void vTaskLoop()
 		return;
 	}
 
+	status = vl53l7cx_set_ranging_mode(&Dev, VL53L7CX_RANGING_MODE_CONTINUOUS);
+	if (status)
+	{
+		ESP_LOGE("sensor", "vl53l7cx_set_ranging_mode failed, status %u\n", status);
+		return;
+	}
 	/* Get current integration time */
 	status = vl53l7cx_get_integration_time_ms(&Dev, &integration_time_ms);
 	if (status)
@@ -230,7 +238,6 @@ void vTaskLoop()
 		return;
 	}
 	ESP_LOGI("sensor", "Current integration time is : %d ms", (int)integration_time_ms);
-
 	/*********************************/
 	/*         Ranging loop          */
 	/*********************************/
@@ -299,6 +306,9 @@ void obtain_time(void)
 	if (retry == retry_count)
 	{
 		ESP_LOGE(TAG, "Failed to obtain time");
+	} else {
+		ESP_LOGI(TAG, "Time is set");
+		green_led_intensity = 100;
 	}
 }
 

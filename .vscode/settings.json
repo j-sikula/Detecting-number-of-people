@@ -1,3 +1,4 @@
 {
-    "C_Cpp.default.compilerPath": "C:/Users/Host/.platformio/packages/toolchain-xtensa-esp-elf/bin/xtensa-esp32-elf-gcc.exe"
+    "C_Cpp.default.compilerPath": "C:/Users/Host/.platformio/packages/toolchain-xtensa-esp-elf/bin/xtensa-esp32-elf-gcc.exe",
+    "idf.portWin": "COM4"
 }
