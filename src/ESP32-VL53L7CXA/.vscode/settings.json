@@ -1,6 +1,0 @@
-{
-    "files.associations": {
-        "platform.h": "c",
-        "esp_log.h": "c"
-    }
-}
