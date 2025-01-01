@@ -8,9 +8,9 @@ class PeopleCounter {
   final GoogleSheetsApi apiPeopleCounter;
   int lastPosition = 0;
   int peopleCount = 0;
-  final int heightTreshold = 1000;
+  final int heightThreshold = 1000;
 
-  /// Number of pixels that must be higer than the treshold
+  /// Number of pixels that must be higer than the threshold
   final int nPixelsToActivateZone = 5;
   static const int nZones = 4;
 
@@ -31,14 +31,14 @@ class PeopleCounter {
         (index) => background[index] - measurement.data[index]);
 
     for (int i = 0; i < nZones; i++) {
-      int nPixelsAboveTreshold = 0;
+      int nPixelsAboveThreshold = 0;
       for (int j = 0; j < 64 / nZones; j++) {
-        if (heightData[i * 64 ~/ nZones + j] > heightTreshold) {
-          nPixelsAboveTreshold++;
+        if (heightData[i * 64 ~/ nZones + j] > heightThreshold) {
+          nPixelsAboveThreshold++;
         }
       }
       // Check if the zone is entered or exited
-      if (nPixelsAboveTreshold > nPixelsToActivateZone) {
+      if (nPixelsAboveThreshold > nPixelsToActivateZone) {
         zoneEntered[i] = true;
         zoneExited[i] = false;
         if (positionEntered == null && (i == 0 || i == nZones - 1)) {

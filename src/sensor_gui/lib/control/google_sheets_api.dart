@@ -98,13 +98,11 @@ class GoogleSheetsApi {
     }
 
     try {
-      // Check if the sheet exists
       final spreadsheet = await sheetsApi!.spreadsheets.get(spreadsheetId);
       final sheetExists = spreadsheet.sheets!
           .any((sheet) => sheet.properties!.title == sheetTitle);
 
       if (!sheetExists) {
-        // Create the sheet
         final request = {
           'addSheet': {
             'properties': {
@@ -132,6 +130,7 @@ class GoogleSheetsApi {
     return true;
   }
 
+  
   /// inserts the header to the sheet
   /// throws an error if the header is not prepared
   Future<void> prepareHeader(String sheetName) {
@@ -143,23 +142,10 @@ class GoogleSheetsApi {
     String range = '$sheetName!A1';
 
     // Define the values to upload
-    final List<List<String>> values;
-    if (isSheetForRawData){
-      values = [
-      [
-        'Data measured on VL53L7CX',
-        'Last Upload'
-      ],
+    final values = [
+      ['Data measured on VL53L7CX', 'Last Upload'],
     ];
-    } else {
-      values = [
-      [
-        'Processed data',
-        'Last Upload'
-      ],
-    ];
-    }
-    
+
     // Create the value range
     ValueRange valueRange = ValueRange.fromJson({
       'range': range,
@@ -176,11 +162,12 @@ class GoogleSheetsApi {
     List<String> zonesHeaders;
     if (isSheetForRawData) {
       zonesHeaders = List.generate(64, (index) => 'Zone $index');
+      zonesHeaders.insert(0, 'UTC time');
     } else {
-      zonesHeaders = ["People count"];
+      zonesHeaders = ["Local time of change","People count"];
     }
     final headerValuesSecond = [
-      ['UTC time', ...zonesHeaders], // UTC time and zone headers or label people count
+      [...zonesHeaders], // UTC time and zone headers or label people count
     ];
 
     final headerValueRangeSecond = ValueRange.fromJson({

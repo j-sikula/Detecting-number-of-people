@@ -42,7 +42,7 @@ class DataDecoder {
       List<String> dataLines = currentData.split('\n');
       DateTime timeOfMeasurement = DateTime.now();
       if (dataLines.length > 1) {
-        if (dataLines.length > 2) {
+        if (dataLines.length > 2) { // to remove lines without information (with less than 10 characters)
           List<String> tempDataLines = dataLines;
           dataLines = [];
           for (String line in tempDataLines) {
@@ -122,9 +122,9 @@ class DataDecoder {
   }
 
   void uploadDataToGoogleSheets() {
-    List<List<String>> parsedMeasurements = [];
+    List<List<String>> parsedMeasurements = []; // all data to be uploaded
     for (Measurement measurement in measurements) {
-      List<String> parsedMeasurement = [];
+      List<String> parsedMeasurement = [];  // one row of data
       parsedMeasurement.add(measurement.time.toIso8601String());
       parsedMeasurement
           .addAll(measurement.data.map((e) => e.toString()).toList());
