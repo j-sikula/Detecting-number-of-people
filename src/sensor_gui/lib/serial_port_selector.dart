@@ -134,7 +134,9 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
                 }).toList(),
               ),
             ),
-            ElevatedButton(onPressed: onBtnRefreshPressed, child: const Icon(Icons.refresh)),
+            ElevatedButton(
+                onPressed: onBtnRefreshPressed,
+                child: const Icon(Icons.refresh)),
             Expanded(
               child: Container(
                 margin: const EdgeInsets.only(left: 10),
@@ -149,13 +151,32 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
             //   key: _serialMonitorKey, serialPortHandler: serialPortHandler),
           ],
         ),
-        ElevatedButton(
-          onPressed: onBtnSavePressed,
-          child: const Text('Save to File'),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton(
+              onPressed: onBtnSavePressed,
+              child: const Text('Save to File'),
+            ),
+            ElevatedButton(
+              onPressed: onBtnSetSurfacePressed,
+              child: const Text('Set Surface'),
+            ),
+          ],
         ),
-        ElevatedButton(
-          onPressed: onBtnSetSurfacePressed,
-          child: const Text('Set Surface'),
+        Container(
+          margin: const EdgeInsets.all(10),
+          child: ValueListenableBuilder<int>(
+            valueListenable:
+                serialPortHandler?.decoder.peopleCounter.peopleCountNotifier ??
+                    ValueNotifier<int>(0),
+            builder: (context, value, child) {
+              return Text(
+                'People count: $value',
+                style: Theme.of(context).textTheme.displaySmall,
+              );
+            },
+          ),
         ),
         Expanded(
           child: SensorDataVisualiser(
@@ -171,11 +192,10 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
   }
 
   void onBtnSetSurfacePressed() {
-    Measurement? lastMeasurement = serialPortHandler?.decoder.getLatestMeasurement();
+    Measurement? lastMeasurement =
+        serialPortHandler?.decoder.getLatestMeasurement();
     if (lastMeasurement != null) {
       serialPortHandler?.decoder.peopleCounter.setSurface(lastMeasurement);
     }
-    
-  
-}
+  }
 }

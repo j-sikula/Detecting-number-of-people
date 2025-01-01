@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:flutter/foundation.dart';
 import 'package:sensor_gui/control/data_decoder.dart';
 
 import 'package:sensor_gui/control/google_sheets_api.dart';
@@ -21,6 +22,9 @@ class PeopleCounter {
   List<int> background = List.filled(64, 0);
 
   PeopleCounter(this.apiPeopleCounter);
+
+  /// Notifier for updating PeopleCount in the UI
+  final ValueNotifier<int> peopleCountNotifier = ValueNotifier<int>(0);
 
   List<int> processMeasurement(Measurement measurement) {
     // Checks size of the data
@@ -54,12 +58,14 @@ class PeopleCounter {
         if (zoneExited.every((element) => element)) {
           if (positionEntered == 0) {
             peopleCount--;
+            peopleCountNotifier.value = peopleCount;
             log('People count decremented: $peopleCount people');
             apiPeopleCounter.appendDataRow(
                 [DateTime.now().toIso8601String(), peopleCount.toString()]);
           }
           if (positionEntered == nZones - 1) {
             peopleCount++;
+            peopleCountNotifier.value = peopleCount;
             log('People count incremented: $peopleCount people');
             apiPeopleCounter.appendDataRow(
                 [DateTime.now().toIso8601String(), peopleCount.toString()]);
