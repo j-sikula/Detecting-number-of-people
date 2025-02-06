@@ -14,21 +14,29 @@ static void wifi_event_handler(void *event_handler_arg, esp_event_base_t event_b
     }
     else if (event_id == WIFI_EVENT_STA_CONNECTED)
     {
-         ESP_LOGI(TAG, "WiFi CONNECTED\n");
+        ESP_LOGI(TAG, "WiFi CONNECTED\n");
     }
     else if (event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
-         ESP_LOGI(TAG, "WiFi lost connection\n");
+        ESP_LOGI(TAG, "WiFi lost connection\n");
         if (retry_num < 5)
         {
+            vTaskDelay(5000 / portTICK_PERIOD_MS);
             esp_wifi_connect();
             retry_num++;
-            printf("Retrying to Connect...\n");
+            ESP_LOGI(TAG, "Retrying to Connect...\n");
+        }
+        else
+        {
+
+            vTaskDelay(30000 / portTICK_PERIOD_MS);
+            esp_wifi_connect();
+            ESP_LOGI(TAG, "Retrying to Connect...\n");
         }
     }
     else if (event_id == IP_EVENT_STA_GOT_IP)
     {
-         ESP_LOGI(TAG, "Wifi got IP...\n\n");
+        ESP_LOGI(TAG, "Wifi got IP...\n\n");
     }
 }
 
@@ -51,7 +59,6 @@ void wifi_task(void *pvParameters)
         },
     };
 
-    
     esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
     esp_wifi_start();
     esp_wifi_set_mode(WIFI_MODE_STA);

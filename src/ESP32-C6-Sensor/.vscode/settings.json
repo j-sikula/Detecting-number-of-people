@@ -22,6 +22,7 @@
         "esp_mac.h": "c",
         "esp_event.h": "c",
         "stdio.h": "c",
-        "vl53l7cx_api.h": "c"
+        "vl53l7cx_api.h": "c",
+        "uart.h": "c"
     }
 }

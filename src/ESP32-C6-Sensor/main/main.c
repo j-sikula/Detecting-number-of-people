@@ -22,6 +22,8 @@
 #include "nvs_flash.h" //non volatile storage
 #include <esp_sntp.h>
 
+#include "google_api/google_api.h"
+
 static const char *TAG = "example";
 
 /* Use project configuration menu (idf.py menuconfig) to choose the GPIO to blink,
@@ -262,11 +264,11 @@ void vTaskLoop()
 				 * of 64 zones to print.
 				 */
 
-				printf("\nData\n");
-				print_current_time();
+				//printf("\nData\n");
+				//print_current_time();
 				for (i = 0; i < VL53L7CX_RESOLUTION_8X8; i++)
 				{
-					printf("%4d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i]);
+					//printf("%4d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i]);
 				}
 
 				loop++;
@@ -326,5 +328,6 @@ void vWifiTask()
 	wifi_task(NULL);
 	// Obtain time after connecting to Wi-Fi
 	obtain_time();
+	get_google_sheets_data(SPREADSHEET_ID, "Sheet1!A1:B2");
 	vTaskDelete(NULL);
 }
