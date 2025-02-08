@@ -3,5 +3,6 @@ idf_component_register(SRCS "main.c"
                         SRCS "wifi/wifi_controller.c"
                         SRCS "vl53l7cx_uld_api/vl53l7cx_api.c"
                         SRCS "google_api/google_api.c"
+                        SRCS "measurement_utils/measurement_utils.c"
                        INCLUDE_DIRS "."
                        EMBED_TXTFILES server_cert.pem)

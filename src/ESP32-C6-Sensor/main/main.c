@@ -21,7 +21,8 @@
 #include "wifi/wifi_controller.h"
 #include "nvs_flash.h" //non volatile storage
 #include <esp_sntp.h>
-
+#include "measurement_utils/measurement_utils.h"
+#include "google_api/keys.h"
 #include "google_api/google_api.h"
 
 static const char *TAG = "example";
@@ -132,7 +133,7 @@ void app_main(void)
 
 	// Start the i2c scanner task
 	xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 5, NULL);
-	xTaskCreate(vWifiTask, "wifi_task", 4096, NULL, 5, NULL);
+	xTaskCreate(vWifiTask, "wifi_task", 6*1024, NULL, 5, NULL);
 
 	while (1)
 	{
@@ -328,6 +329,10 @@ void vWifiTask()
 	wifi_task(NULL);
 	// Obtain time after connecting to Wi-Fi
 	obtain_time();
+
+	
+
 	get_google_sheets_data(SPREADSHEET_ID, "Sheet1!A1:B2");
+	update_google_sheets_data(SPREADSHEET_ID, get_current_time(), "Sheet1!D1", ACCESS_TOKEN);
 	vTaskDelete(NULL);
 }
