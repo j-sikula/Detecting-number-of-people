@@ -24,6 +24,7 @@
 #include "measurement_utils/measurement_utils.h"
 #include "google_api/keys.h"
 #include "google_api/google_api.h"
+#include "google_api/authentication.h"
 
 static const char *TAG = "example";
 
@@ -333,6 +334,6 @@ void vWifiTask()
 	
 
 	get_google_sheets_data(SPREADSHEET_ID, "Sheet1!A1:B2");
-	update_google_sheets_data(SPREADSHEET_ID, get_current_time(), "Sheet1!D1", ACCESS_TOKEN);
+	update_google_sheets_data(SPREADSHEET_ID, get_current_time(), "Sheet1!D1", generate_access_token());
 	vTaskDelete(NULL);
 }

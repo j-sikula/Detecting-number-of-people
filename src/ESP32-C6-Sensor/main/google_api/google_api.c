@@ -11,14 +11,9 @@ extern const uint8_t server_cert_pem_end[] asm("_binary_server_cert_pem_end");
 
 static const char *TAG = "google_sheets";
 
-typedef struct
-{
-    char *buffer;
-    int buffer_len;
-    int buffer_size;
-} http_response_t;
 
-esp_err_t _http_event_handler(esp_http_client_event_t *evt)
+
+esp_err_t http_event_handler(esp_http_client_event_t *evt)
 {
     http_response_t *response = (http_response_t *)evt->user_data;
 
@@ -80,7 +75,7 @@ void send_data(const char *data)
 {
     esp_http_client_config_t config = {
         .url = "https://app.izidoor.cz/getEvangelium.ashx",
-        .event_handler = _http_event_handler,
+        .event_handler = http_event_handler,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
 
@@ -108,7 +103,7 @@ void get_google_sheets_data(const char *spreadsheet_id, const char *range)
 
     esp_http_client_config_t config = {
         .url = url,
-        .event_handler = _http_event_handler,
+        .event_handler = http_event_handler,
         .cert_pem = (const char *)server_cert_pem_start,
         .user_data = &response,
     };
@@ -215,7 +210,7 @@ void update_google_sheets_data(const char *spreadsheet_id, const char *data, con
 
     esp_http_client_config_t config = {
         .url = url,
-        .event_handler = _http_event_handler,
+        .event_handler = http_event_handler,
         .cert_pem = (const char *)server_cert_pem_start,
         .user_data = &response,
         .buffer_size = 4*1024,
