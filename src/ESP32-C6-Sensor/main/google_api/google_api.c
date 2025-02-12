@@ -11,8 +11,6 @@ extern const uint8_t server_cert_pem_end[] asm("_binary_server_cert_pem_end");
 
 static const char *TAG = "google_sheets";
 
-
-
 esp_err_t http_event_handler(esp_http_client_event_t *evt)
 {
     http_response_t *response = (http_response_t *)evt->user_data;
@@ -69,29 +67,6 @@ esp_err_t http_event_handler(esp_http_client_event_t *evt)
         break;
     }
     return ESP_OK;
-}
-
-void send_data(const char *data)
-{
-    esp_http_client_config_t config = {
-        .url = "https://app.izidoor.cz/getEvangelium.ashx",
-        .event_handler = http_event_handler,
-    };
-    esp_http_client_handle_t client = esp_http_client_init(&config);
-
-    esp_err_t err = esp_http_client_perform(client);
-    if (err == ESP_OK)
-    {
-        printf("HTTP GET Status = %d, content_length = %lld\n",
-               esp_http_client_get_status_code(client),
-               esp_http_client_get_content_length(client));
-    }
-    else
-    {
-        printf("HTTP GET request failed: %s\n", esp_err_to_name(err));
-    }
-
-    esp_http_client_cleanup(client);
 }
 
 void get_google_sheets_data(const char *spreadsheet_id, const char *range)
@@ -154,7 +129,6 @@ void get_google_sheets_data(const char *spreadsheet_id, const char *range)
 
         // Free the response buffer
         free(response.buffer);
-       
     }
     else
     {
@@ -170,21 +144,64 @@ void get_google_sheets_data(const char *spreadsheet_id, const char *range)
  * @brief Append data to a Google Sheets spreadsheet
  * https://developers.google.com/sheets/api/samples/writing#append_values
  * https://developers.google.com/sheets/api/reference/rest/v4/spreadsheets.values/append
- * 
+ *
  */
-void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, const char *sheet_name)
+void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, const char *sheet_name, const char *access_token)
 {
+    char url[512];
+    snprintf(url, sizeof(url), "https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=VALUE_INPUT_OPTION", spreadsheet_id, sheet_name);
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON_AddStringToObject(root, "%s!A1:E1", sheet_name);
+    cJSON_AddStringToObject(root, "majorDimension", "ROWS");
+
+    cJSON *values = cJSON_CreateArray();
+
+    // TODO: Add data to the values array in cycle
+    cJSON *row1 = cJSON_CreateArray();
+    cJSON_AddItemToArray(row1, cJSON_CreateString("Door"));
+    cJSON_AddItemToArray(row1, cJSON_CreateString("$15"));
+    cJSON_AddItemToArray(row1, cJSON_CreateString("2"));
+    cJSON_AddItemToArray(row1, cJSON_CreateString("3/15/2016"));
+    cJSON_AddItemToArray(values, row1);
+
+    cJSON *row2 = cJSON_CreateArray();
+    cJSON_AddItemToArray(row2, cJSON_CreateString("Engine"));
+    cJSON_AddItemToArray(row2, cJSON_CreateString("$100"));
+    cJSON_AddItemToArray(row2, cJSON_CreateString("1"));
+    cJSON_AddItemToArray(row2, cJSON_CreateString("3/20/2016"));
+    cJSON_AddItemToArray(values, row2);
+
+    cJSON_AddItemToObject(root, "values", values);
+
+    _send_api_request(url, HTTP_METHOD_POST, root, access_token);
 }
 
 /**
  * @brief Create a new sheet in a Google Sheets spreadsheet
  * POST request
  * https://developers.google.com/sheets/api/samples/sheet#add_a_sheet
- * 
- * 
+ *
+ *
  */
-void create_new_sheet(const char *spreadsheet_id, const char *sheet_name)
+void create_new_sheet(const char *spreadsheet_id, const char *sheet_name, const char *access_token)
 {
+    char url[512];
+    snprintf(url, sizeof(url), "https://sheets.googleapis.com/v4/spreadsheets/%s:batchUpdate", spreadsheet_id);
+
+    cJSON *root = cJSON_CreateObject();
+    cJSON *requests = cJSON_CreateArray();
+    cJSON *addSheetRequest = cJSON_CreateObject();
+    cJSON *addSheet = cJSON_CreateObject();
+    cJSON *properties = cJSON_CreateObject();
+
+    cJSON_AddStringToObject(properties, "title", sheet_name);
+    cJSON_AddItemToObject(addSheet, "properties", properties);
+    cJSON_AddItemToObject(addSheetRequest, "addSheet", addSheet);
+    cJSON_AddItemToArray(requests, addSheetRequest);
+    cJSON_AddItemToObject(root, "requests", requests);
+
+    _send_api_request(url, HTTP_METHOD_POST, root, access_token);
 }
 
 void update_google_sheets_data(const char *spreadsheet_id, const char *data, const char *range, const char *access_token)
@@ -192,11 +209,10 @@ void update_google_sheets_data(const char *spreadsheet_id, const char *data, con
     char url[512];
     snprintf(url, sizeof(url), "https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s?valueInputOption=USER_ENTERED&key=%s", spreadsheet_id, range, API_KEY);
 
-    
     cJSON *values = cJSON_CreateArray();
     cJSON *row = cJSON_CreateArray();
     cJSON_AddItemToArray(row, cJSON_CreateString(data));
-     cJSON_AddItemToArray(values, row);
+    cJSON_AddItemToArray(values, row);
     // Create JSON payload
     cJSON *root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "range", range);
@@ -213,11 +229,11 @@ void update_google_sheets_data(const char *spreadsheet_id, const char *data, con
         .event_handler = http_event_handler,
         .cert_pem = (const char *)server_cert_pem_start,
         .user_data = &response,
-        .buffer_size = 4*1024,
-        .buffer_size_tx = 4*1024,
+        .buffer_size = 4 * 1024,
+        .buffer_size_tx = 4 * 1024,
     };
-    esp_http_client_handle_t client = esp_http_client_init(&config);  
-    
+    esp_http_client_handle_t client = esp_http_client_init(&config);
+
     char auth_header[1040];
     snprintf(auth_header, sizeof(auth_header), "Bearer %s", access_token);
     esp_http_client_set_header(client, "Authorization", auth_header);
@@ -234,7 +250,7 @@ void update_google_sheets_data(const char *spreadsheet_id, const char *data, con
                  esp_http_client_get_content_length(client));
         ESP_LOGI("Google Sheets", "%s", log_msg);
 
-        printf("Response: %s\n", response.buffer);
+        ESP_LOGI(TAG, "Response: %s\n", response.buffer);
 
         // Parse the JSON response
         cJSON *json = cJSON_Parse(response.buffer);
@@ -267,3 +283,69 @@ void update_google_sheets_data(const char *spreadsheet_id, const char *data, con
     esp_http_client_cleanup(client);
 }
 
+void _send_api_request(const char *url, esp_http_client_method_t method, cJSON *data, const char *access_token)
+{
+
+    char *json_data = cJSON_PrintUnformatted(data);
+    cJSON_Delete(data);
+
+    http_response_t response = {0};
+
+    esp_http_client_config_t config = {
+        .url = url,
+        .event_handler = http_event_handler,
+        .cert_pem = (const char *)server_cert_pem_start,
+        .user_data = &response,
+        .buffer_size = 4 * 1024,
+        .buffer_size_tx = 4 * 1024,
+    };
+    esp_http_client_handle_t client = esp_http_client_init(&config);
+
+    char auth_header[1040];
+    snprintf(auth_header, sizeof(auth_header), "Bearer %s", access_token);
+    esp_http_client_set_header(client, "Authorization", auth_header);
+    esp_http_client_set_method(client, method);
+    esp_http_client_set_header(client, "Content-Type", "application/json");
+    esp_http_client_set_post_field(client, json_data, strlen(json_data));
+
+    esp_err_t err = esp_http_client_perform(client);
+    if (err == ESP_OK)
+    {
+        char log_msg[100];
+        snprintf(log_msg, sizeof(log_msg), "HTTP Status = %d, content_length = %lld",
+                 esp_http_client_get_status_code(client),
+                 esp_http_client_get_content_length(client));
+        ESP_LOGI("Google Sheets", "%s", log_msg);
+
+        ESP_LOGI(TAG, "Response: %s\n", response.buffer);
+
+        // Parse the JSON response
+        cJSON *json = cJSON_Parse(response.buffer);
+        if (json == NULL)
+        {
+            ESP_LOGE("Google Sheets", "Failed to parse JSON response");
+            const char *error_ptr = cJSON_GetErrorPtr();
+            if (error_ptr != NULL)
+            {
+                ESP_LOGE("Google Sheets", "Error before: %s", error_ptr);
+            }
+        }
+        else
+        {
+            // Handle the response as needed
+            cJSON_Delete(json);
+        }
+
+        // Free the response buffer
+        free(response.buffer);
+    }
+    else
+    {
+        char error_msg[100];
+        snprintf(error_msg, sizeof(error_msg), "HTTP PUT request failed: %s", esp_err_to_name(err));
+        ESP_LOGE("Google Sheets", "%s", error_msg);
+    }
+
+    free(json_data);
+    esp_http_client_cleanup(client);
+}

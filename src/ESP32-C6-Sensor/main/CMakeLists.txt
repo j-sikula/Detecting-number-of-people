@@ -4,6 +4,7 @@ idf_component_register(SRCS "main.c"
                         SRCS "vl53l7cx_uld_api/vl53l7cx_api.c"
                         SRCS "google_api/google_api.c"
                         SRCS "google_api/authentication.c"
-                        SRCS "measurement_utils/measurement_utils.c"
+                        SRCS "measurement_utils/utils.c"
+                        SRCS "measurement_utils/sensor.c"
                        INCLUDE_DIRS "."
                        EMBED_TXTFILES server_cert.pem)

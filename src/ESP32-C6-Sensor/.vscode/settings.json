@@ -102,6 +102,9 @@
         "cstdbool": "c",
         "typeinfo": "c",
         "variant": "c",
-        "*.inc": "c"
+        "*.inc": "c",
+        "cjson.h": "c",
+        "authentication.h": "c",
+        "sensor.h": "c"
     }
 }
