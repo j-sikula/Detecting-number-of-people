@@ -5,11 +5,7 @@
 #include "nvs_flash.h" //non volatile storage
 #include <esp_sntp.h>
 
-typedef struct
-{
-    uint16_t distance_mm[64];
-    char *timestamp;
-} measurement_t;
+
 
 char *get_current_time(void);
 

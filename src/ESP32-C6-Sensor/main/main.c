@@ -10,6 +10,7 @@
 #include <time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 #include "driver/gpio.h"
 #include "esp_log.h"
 #include "led_strip.h"
@@ -23,6 +24,8 @@
 #include "google_api/keys.h"
 #include "google_api/google_api.h"
 #include "google_api/authentication.h"
+
+#include "esp_heap_caps.h"
 
 /* Use project configuration menu (idf.py menuconfig) to choose the GPIO to blink,
    or you can edit the following line and set a number here.
@@ -74,8 +77,16 @@ static void configure_led(void)
 
 #endif
 
+static QueueHandle_t measurementQueue;
+
 void vTaskLoop();
 void vWifiTask();
+
+void check_heap_memory()
+{
+	size_t free_heap_size = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+	ESP_LOGI("Heap", "Free heap size: %d bytes", free_heap_size);
+}
 
 void app_main(void)
 {
@@ -83,9 +94,18 @@ void app_main(void)
 	/* Configure the peripheral according to the LED type */
 	configure_led();
 
+	measurementQueue = xQueueCreate(10, sizeof(measurement_t *));
+	if (measurementQueue == NULL)
+	{
+		ESP_LOGE("app_main", "Failed to create queue");
+		return;
+	}
+
 	// Start the i2c scanner task
+
 	xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 5, NULL);
-	xTaskCreate(vWifiTask, "wifi_task", 6 * 1024, NULL, 4, NULL);
+
+	xTaskCreate(vWifiTask, "wifi_task", 32 * 1024, NULL, 4, NULL);
 
 	while (1)
 	{
@@ -101,7 +121,8 @@ void vTaskLoop()
 {
 	// Initialize the sensor.
 	initVL53L7CX();
-	startContinuousMeasurement();
+	check_heap_memory();
+	startContinuousMeasurement(measurementQueue);
 	// Delete this task if it exits from the loop above
 	vTaskDelete(NULL);
 }
@@ -119,6 +140,18 @@ void vWifiTask()
 		{
 			create_new_sheet(SPREADSHEET_ID, "Sheet2", access_token);
 			update_google_sheets_data(SPREADSHEET_ID, get_current_time(), "Sheet2!C1", access_token);
+
+			while (true)
+			{
+				measurement_t *receivedMeasurement;
+				if (xQueueReceive(measurementQueue, &receivedMeasurement, portMAX_DELAY) == pdPASS)
+				{
+					ESP_LOGI("measurement", "Received measurement %s\n", receivedMeasurement->timestamp);
+					append_google_sheets_data(SPREADSHEET_ID, receivedMeasurement, "Sheet2", access_token);
+					check_heap_memory();
+				}
+				vTaskDelay(500 / portTICK_PERIOD_MS);
+			}
 		}
 	}
 

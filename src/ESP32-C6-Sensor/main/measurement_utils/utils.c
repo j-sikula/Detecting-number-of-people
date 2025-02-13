@@ -22,8 +22,10 @@ char *get_current_time(void)
 
     strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
 
-    static char current_time[89];
-    snprintf(current_time, sizeof(current_time), "%s,%d", buffer, milliseconds);
+    
+	char *current_time = (char *)malloc(89 * sizeof(char));
+    snprintf(current_time, 89*sizeof(char), "%s,%d", buffer, milliseconds);
+	
     return current_time;
 }
 

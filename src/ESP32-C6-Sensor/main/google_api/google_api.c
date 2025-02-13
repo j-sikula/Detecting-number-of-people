@@ -149,32 +149,37 @@ void get_google_sheets_data(const char *spreadsheet_id, const char *range)
 void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, const char *sheet_name, const char *access_token)
 {
     char url[512];
-    snprintf(url, sizeof(url), "https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=VALUE_INPUT_OPTION", spreadsheet_id, sheet_name);
+    snprintf(url, sizeof(url), "https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=RAW", spreadsheet_id, sheet_name);
+    char *dataJSON = (char *)malloc(JSON_APPEND_LENGTH * sizeof(char));
+    snprintf(dataJSON, JSON_APPEND_LENGTH * sizeof(char), "{\"range\":\"%s\",\"majorDimension\":\"ROWS\",\"values\":[", sheet_name);
 
-    cJSON *root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "%s!A1:E1", sheet_name);
-    cJSON_AddStringToObject(root, "majorDimension", "ROWS");
+    for (int i = 0; i < MEASUREMENT_LOOP_COUNT; i++)
+    {
+        char row_buffer[1024];
+        snprintf(row_buffer, sizeof(row_buffer), "[\"%s\"", data[i].timestamp);
 
-    cJSON *values = cJSON_CreateArray();
+        for (int j = 0; j < N_ZONES; j++)
+        {
+            char value_buffer[16];
+            snprintf(value_buffer, sizeof(value_buffer), ",%d", data[i].distance_mm[j]);
+            strncat(row_buffer, value_buffer, sizeof(row_buffer) - strlen(row_buffer) - 1);
+        }
 
-    // TODO: Add data to the values array in cycle
-    cJSON *row1 = cJSON_CreateArray();
-    cJSON_AddItemToArray(row1, cJSON_CreateString("Door"));
-    cJSON_AddItemToArray(row1, cJSON_CreateString("$15"));
-    cJSON_AddItemToArray(row1, cJSON_CreateString("2"));
-    cJSON_AddItemToArray(row1, cJSON_CreateString("3/15/2016"));
-    cJSON_AddItemToArray(values, row1);
+        strncat(row_buffer, "]", sizeof(row_buffer) - strlen(row_buffer) - 1);
 
-    cJSON *row2 = cJSON_CreateArray();
-    cJSON_AddItemToArray(row2, cJSON_CreateString("Engine"));
-    cJSON_AddItemToArray(row2, cJSON_CreateString("$100"));
-    cJSON_AddItemToArray(row2, cJSON_CreateString("1"));
-    cJSON_AddItemToArray(row2, cJSON_CreateString("3/20/2016"));
-    cJSON_AddItemToArray(values, row2);
+        if (i < MEASUREMENT_LOOP_COUNT - 1)
+        {
+            strncat(row_buffer, ",", sizeof(row_buffer) - strlen(row_buffer) - 1);
+        }
 
-    cJSON_AddItemToObject(root, "values", values);
+        strncat(dataJSON, row_buffer, JSON_APPEND_LENGTH * sizeof(char) - strlen(dataJSON) - 1);
+        free(data[i].timestamp);
+    }
 
-    _send_api_request(url, HTTP_METHOD_POST, root, access_token);
+    strncat(dataJSON, "]}", JSON_APPEND_LENGTH * sizeof(char) - strlen(dataJSON) - 1);
+    free(data);
+
+    _send_api_request(url, HTTP_METHOD_POST, dataJSON, 30 * 1024, access_token);
 }
 
 /**
@@ -200,8 +205,9 @@ void create_new_sheet(const char *spreadsheet_id, const char *sheet_name, const 
     cJSON_AddItemToObject(addSheetRequest, "addSheet", addSheet);
     cJSON_AddItemToArray(requests, addSheetRequest);
     cJSON_AddItemToObject(root, "requests", requests);
-
-    _send_api_request(url, HTTP_METHOD_POST, root, access_token);
+    char *data = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    _send_api_request(url, HTTP_METHOD_POST, data, 4 * 1024, access_token);
 }
 
 void update_google_sheets_data(const char *spreadsheet_id, const char *data, const char *range, const char *access_token)
@@ -283,11 +289,14 @@ void update_google_sheets_data(const char *spreadsheet_id, const char *data, con
     esp_http_client_cleanup(client);
 }
 
-void _send_api_request(const char *url, esp_http_client_method_t method, cJSON *data, const char *access_token)
+void _send_api_request(const char *url, esp_http_client_method_t method, char *data, int tx_buffer_size, const char *access_token)
 {
 
-    char *json_data = cJSON_PrintUnformatted(data);
-    cJSON_Delete(data);
+    if (data == NULL)
+    {
+        ESP_LOGE("API", "Failed to load JSON payload");
+        return;
+    }
 
     http_response_t response = {0};
 
@@ -297,7 +306,7 @@ void _send_api_request(const char *url, esp_http_client_method_t method, cJSON *
         .cert_pem = (const char *)server_cert_pem_start,
         .user_data = &response,
         .buffer_size = 4 * 1024,
-        .buffer_size_tx = 4 * 1024,
+        .buffer_size_tx = tx_buffer_size,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
 
@@ -306,18 +315,24 @@ void _send_api_request(const char *url, esp_http_client_method_t method, cJSON *
     esp_http_client_set_header(client, "Authorization", auth_header);
     esp_http_client_set_method(client, method);
     esp_http_client_set_header(client, "Content-Type", "application/json");
-    esp_http_client_set_post_field(client, json_data, strlen(json_data));
+    esp_http_client_set_post_field(client, data, strlen(data));
 
     esp_err_t err = esp_http_client_perform(client);
     if (err == ESP_OK)
     {
-        char log_msg[100];
-        snprintf(log_msg, sizeof(log_msg), "HTTP Status = %d, content_length = %lld",
-                 esp_http_client_get_status_code(client),
-                 esp_http_client_get_content_length(client));
-        ESP_LOGI("Google Sheets", "%s", log_msg);
-
-        ESP_LOGI(TAG, "Response: %s\n", response.buffer);
+        if (esp_http_client_get_status_code(client) != 200)
+        {
+            char log_msg[100];
+            snprintf(log_msg, sizeof(log_msg), "HTTP Status = %d, content_length = %lld",
+                     esp_http_client_get_status_code(client),
+                     esp_http_client_get_content_length(client));
+            ESP_LOGI("Google Sheets", "%s", log_msg);
+            ESP_LOGI(TAG, "Response: %s\n", response.buffer);
+        }
+        else
+        {
+            ESP_LOGI("API", "Request successful - 200");
+        }
 
         // Parse the JSON response
         cJSON *json = cJSON_Parse(response.buffer);
@@ -335,9 +350,6 @@ void _send_api_request(const char *url, esp_http_client_method_t method, cJSON *
             // Handle the response as needed
             cJSON_Delete(json);
         }
-
-        // Free the response buffer
-        free(response.buffer);
     }
     else
     {
@@ -345,7 +357,8 @@ void _send_api_request(const char *url, esp_http_client_method_t method, cJSON *
         snprintf(error_msg, sizeof(error_msg), "HTTP PUT request failed: %s", esp_err_to_name(err));
         ESP_LOGE("Google Sheets", "%s", error_msg);
     }
-
-    free(json_data);
+    // Free the response buffer
+    free(response.buffer);
+    free(data);
     esp_http_client_cleanup(client);
 }

@@ -101,12 +101,19 @@ void initVL53L7CX()
 	ESP_LOGI("sensor", "Current integration time is : %d ms", (int)integration_time_ms);
 }
 
-void startContinuousMeasurement()
+void startContinuousMeasurement(QueueHandle_t measurementQueue)
 {
 	status = vl53l7cx_start_ranging(&Dev);
 	while (is_measuring)
 	{
 		loop = 0;
+		measurement_t* measurement = (measurement_t*)malloc(MEASUREMENT_LOOP_COUNT * sizeof(measurement_t));
+		if (measurement == NULL)
+		{
+			ESP_LOGE("vTaskLoop", "Failed to allocate memory for measurement");
+			return;
+		}
+	
 		while (loop < MEASUREMENT_LOOP_COUNT)
 		{
 			/* Use polling function to know when a new measurement is ready.
@@ -122,20 +129,40 @@ void startContinuousMeasurement()
 				/* As the sensor is set in 8x8 mode by default, we have a total
 				 * of 64 zones to print.
 				 */
-
-				printf("\nData\n");
-				printf(get_current_time());
-				for (i = 0; i < VL53L7CX_RESOLUTION_8X8; i++)
+				
+				measurement[loop].timestamp = get_current_time();
+				for (i = 0; i < N_ZONES; i++)
 				{
-					printf("%4d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i]);
+					measurement[loop].distance_mm[i] = Results.distance_mm[i];
+				}
+/*
+				measurement_t current_measurement;
+				current_measurement.timestamp = timestamp;
+				for (i = 0; i < N_ZONES; i++)
+				{
+					current_measurement.distance_mm[i] = Results.distance_mm[i];
 				}
 
+				measurement[loop] = current_measurement;*/
+
+				printf("\nData\n%s", measurement[loop].timestamp);
+
+				
+				for (i = 0; i < VL53L7CX_RESOLUTION_8X8; i++)
+				{
+					//printf("%4d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i]);
+				}
 				loop++;
 			}
 
 			/* Wait a few ms to avoid too high polling (function in platform
 			 * file, not in API) */
 			VL53L7CX_WaitMs(&(Dev.platform), 10);
+		}
+
+		if (xQueueSend(measurementQueue, &measurement, portMAX_DELAY) != pdPASS)
+		{
+			ESP_LOGE("vTaskLoop", "Failed to send measurement to queue");
 		}
 	}
 	status = vl53l7cx_stop_ranging(&Dev);
