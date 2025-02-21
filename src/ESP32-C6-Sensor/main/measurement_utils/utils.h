@@ -6,8 +6,19 @@
 #include <esp_sntp.h>
 
 
-
+/**
+ * @brief Allocate memory for a string containing the current time
+ * @note Need to free the memory after use
+ * @return current time in format "YYYY-MM-DD HH:MM:SS,ms"
+ */
 char *get_current_time(void);
+
+/**
+ * @brief Allocate memory for a string containing the current date
+ * @note Need to free the memory after use
+ * @return current date in format "YYYY_MM_DD"
+ */
+char *get_current_date(void);
 
 /**
  * @brief Set local time from Wi-Fi

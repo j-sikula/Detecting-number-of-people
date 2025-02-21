@@ -148,6 +148,7 @@ void get_google_sheets_data(const char *spreadsheet_id, const char *range)
  */
 void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, const char *sheet_name, const char *access_token)
 {
+    static uint8_t n_request_repeated = 0;
     char url[512];
     snprintf(url, sizeof(url), "https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=RAW", spreadsheet_id, sheet_name);
     char *dataJSON = (char *)malloc(JSON_APPEND_LENGTH * sizeof(char));
@@ -177,9 +178,26 @@ void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, 
     }
 
     strncat(dataJSON, "]}", JSON_APPEND_LENGTH * sizeof(char) - strlen(dataJSON) - 1);
-    free(data);
 
-    _send_api_request(url, HTTP_METHOD_POST, dataJSON, 30 * 1024, access_token);
+    uint8_t status_code = _send_api_request(url, HTTP_METHOD_POST, dataJSON, 30 * 1024, access_token);
+
+    // when sheet does not exist, create a new sheet and retry the request
+    if (status_code != 200)
+    {
+        if (n_request_repeated < REQUEST_RETRIES)
+        {
+            n_request_repeated++;
+            ESP_LOGI(TAG, "Creating a new Sheet and retrying the request");
+            create_new_sheet(spreadsheet_id, sheet_name, access_token);
+            append_google_sheets_data(spreadsheet_id, data, sheet_name, access_token);
+        }
+    }
+    else
+    {
+        // reset the counter when the request is successful
+        n_request_repeated = 0;
+    }
+    free(data);
 }
 
 /**
@@ -289,13 +307,13 @@ void update_google_sheets_data(const char *spreadsheet_id, const char *data, con
     esp_http_client_cleanup(client);
 }
 
-void _send_api_request(const char *url, esp_http_client_method_t method, char *data, int tx_buffer_size, const char *access_token)
+uint16_t _send_api_request(const char *url, esp_http_client_method_t method, char *data, int tx_buffer_size, const char *access_token)
 {
 
     if (data == NULL)
     {
         ESP_LOGE("API", "Failed to load JSON payload");
-        return;
+        return 400;
     }
 
     http_response_t response = {0};
@@ -361,4 +379,5 @@ void _send_api_request(const char *url, esp_http_client_method_t method, char *d
     free(response.buffer);
     free(data);
     esp_http_client_cleanup(client);
+    return esp_http_client_get_status_code(client);
 }

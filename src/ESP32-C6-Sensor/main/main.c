@@ -138,7 +138,7 @@ void vWifiTask()
 		char *access_token = generate_access_token();
 		if (access_token != NULL)
 		{
-			create_new_sheet(SPREADSHEET_ID, "Sheet2", access_token);
+			create_new_sheet(SPREADSHEET_ID, "2025_02_18", access_token);
 			update_google_sheets_data(SPREADSHEET_ID, get_current_time(), "Sheet2!C1", access_token);
 
 			while (true)
@@ -147,7 +147,9 @@ void vWifiTask()
 				if (xQueueReceive(measurementQueue, &receivedMeasurement, portMAX_DELAY) == pdPASS)
 				{
 					ESP_LOGI("measurement", "Received measurement %s\n", receivedMeasurement->timestamp);
-					append_google_sheets_data(SPREADSHEET_ID, receivedMeasurement, "Sheet2", access_token);
+					char *date = get_current_date();
+					append_google_sheets_data(SPREADSHEET_ID, receivedMeasurement, date, access_token);
+					free(date);
 					check_heap_memory();
 				}
 				vTaskDelay(500 / portTICK_PERIOD_MS);

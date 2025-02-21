@@ -29,7 +29,19 @@ char *get_current_time(void)
     return current_time;
 }
 
+char *get_current_date(void)
+{
+    time_t rawtime;
+    struct tm *timeinfo;
+    char *buffer = (char *)malloc(11 * sizeof(char));
 
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, sizeof(buffer), "%Y_%m_%d", timeinfo);
+
+	return buffer;
+}
 
 uint8_t obtain_time(void)
 {
