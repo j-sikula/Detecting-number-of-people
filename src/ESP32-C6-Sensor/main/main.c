@@ -25,6 +25,8 @@
 #include "google_api/google_api.h"
 #include "google_api/authentication.h"
 
+#include "sd_card/sd_card.h"
+
 #include "esp_heap_caps.h"
 
 /* Use project configuration menu (idf.py menuconfig) to choose the GPIO to blink,
@@ -81,6 +83,7 @@ static QueueHandle_t measurementQueue;
 
 void vTaskLoop();
 void vWifiTask();
+void vTaskSDCard();
 
 void check_heap_memory()
 {
@@ -103,10 +106,10 @@ void app_main(void)
 
 	// Start the i2c scanner task
 
-	xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 5, NULL);
+	//xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 5, NULL);
 
-	xTaskCreate(vWifiTask, "wifi_task", 32 * 1024, NULL, 4, NULL);
-
+	//xTaskCreate(vWifiTask, "wifi_task", 32 * 1024, NULL, 4, NULL);
+	xTaskCreate(vTaskSDCard, "sd_card_task", 32* 1024, NULL, 4, NULL);
 	while (1)
 	{
 		// ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF");
@@ -115,6 +118,12 @@ void app_main(void)
 		s_led_state = !s_led_state;
 		vTaskDelay(CONFIG_BLINK_PERIOD / portTICK_PERIOD_MS);
 	}
+}
+
+void vTaskSDCard()
+{
+	init_sd_card();
+	vTaskDelete(NULL);
 }
 
 void vTaskLoop()
