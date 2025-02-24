@@ -135,22 +135,14 @@ void startContinuousMeasurement(QueueHandle_t measurementQueue)
 				{
 					measurement[loop].distance_mm[i] = Results.distance_mm[i];
 				}
-/*
-				measurement_t current_measurement;
-				current_measurement.timestamp = timestamp;
-				for (i = 0; i < N_ZONES; i++)
-				{
-					current_measurement.distance_mm[i] = Results.distance_mm[i];
-				}
 
-				measurement[loop] = current_measurement;*/
 
 				printf("\nData\n%s", measurement[loop].timestamp);
 
 				
 				for (i = 0; i < VL53L7CX_RESOLUTION_8X8; i++)
 				{
-					//printf("%4d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i]);
+					printf("%4d;%d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i], Results.target_status[VL53L7CX_NB_TARGET_PER_ZONE * i]);
 				}
 				loop++;
 			}
@@ -159,11 +151,12 @@ void startContinuousMeasurement(QueueHandle_t measurementQueue)
 			 * file, not in API) */
 			VL53L7CX_WaitMs(&(Dev.platform), 10);
 		}
-
+		free(measurement);
+/*
 		if (xQueueSend(measurementQueue, &measurement, portMAX_DELAY) != pdPASS)
 		{
 			ESP_LOGE("vTaskLoop", "Failed to send measurement to queue");
-		}
+		}*/
 	}
 	status = vl53l7cx_stop_ranging(&Dev);
 }

@@ -14,11 +14,12 @@ class DataDecoder {
   String previousData = '';
   List<Measurement> measurements = []; // List of non backed-up measurements
   List<Measurement> allMeasurements = []; // List of all measurements
-  GoogleSheetsApi apiRawDataCloud = GoogleSheetsApi('1TzPddcXQPqZVjk_19nel91hl8BTlgOg8bBRZ543iEuM', true);
-  GoogleSheetsApi apiPeopleCounter = GoogleSheetsApi('1SMUomRFOupgDCK7eLoi8eb6Y_97LJ3NA8j68mztiyTw', false);
+  GoogleSheetsApi apiRawDataCloud =
+      GoogleSheetsApi('1TzPddcXQPqZVjk_19nel91hl8BTlgOg8bBRZ543iEuM', true);
+  GoogleSheetsApi apiPeopleCounter =
+      GoogleSheetsApi('1SMUomRFOupgDCK7eLoi8eb6Y_97LJ3NA8j68mztiyTw', false);
   late PeopleCounter peopleCounter;
   DataDecoder() {
-
     apiRawDataCloud.initGoogleAPI();
     Timer.periodic(const Duration(seconds: 10), (timer) {
       uploadDataToGoogleSheets();
@@ -41,16 +42,18 @@ class DataDecoder {
     if (currentData.isNotEmpty) {
       List<String> dataLines = currentData.split('\n');
       DateTime timeOfMeasurement = DateTime.now();
-      if (dataLines.length > 1) {
-        if (dataLines.length > 2) { // to remove lines without information (with less than 10 characters)
-          List<String> tempDataLines = dataLines;
-          dataLines = [];
-          for (String line in tempDataLines) {
-            if (line.length > 10) {
-              dataLines.add(line);
-            }
+
+      if (dataLines.length > 2) {
+        // to remove lines without information (with less than 10 characters)
+        List<String> tempDataLines = dataLines;
+        dataLines = [];
+        for (String line in tempDataLines) {
+          if (line.length > 10) {
+            dataLines.add(line);
           }
         }
+      }
+      if (dataLines.length > 1) {
         // Check if there is 2 complete line of data
         currentData =
             dataLines[1]; // Extract the current data from the previous data
@@ -67,17 +70,33 @@ class DataDecoder {
               ' ') // Replace multiple spaces with a single space
           .split(' ')
           .skip(1)
-          .map((e) => int.tryParse(e) ?? 0) // Convert the data to integers
+          .map((e) =>
+              int.tryParse(e.split(";").first) ??
+              0) // Convert the data to integers
+          .toList();
+
+      List<int> decodedStatuses = currentData
+          .replaceAll(RegExp(r'\s+'),
+              ' ') // Replace multiple spaces with a single space
+          .split(' ')
+          .skip(1)
+          .map((e) =>
+              int.tryParse(e.split(";").last) ??
+              0) // Convert the data to integers
           .toList();
       if (decodedData.length >= 64) {
         // Check if the data has at least 64 elements
+
         decodedData = decodedData.take(64).toList();
         Measurement currentMeasurement =
-            Measurement(decodedData, timeOfMeasurement);
+            Measurement(decodedData, timeOfMeasurement, decodedStatuses);
         measurements.add(currentMeasurement);
         allMeasurements.add(currentMeasurement);
-        Measurement toReturn = Measurement(peopleCounter.processMeasurement(currentMeasurement), timeOfMeasurement);
-        
+        Measurement toReturn = Measurement(
+            peopleCounter.processMeasurement(currentMeasurement),
+            timeOfMeasurement,
+            decodedStatuses);
+
         return toReturn;
       }
     }
@@ -114,7 +133,7 @@ class DataDecoder {
       }
       await sink.flush();
       await sink.close();
-      
+
       log('Data saved to file successfully');
     } catch (e) {
       log('Failed to save data to file: $e');
@@ -124,13 +143,13 @@ class DataDecoder {
   void uploadDataToGoogleSheets() {
     List<List<String>> parsedMeasurements = []; // all data to be uploaded
     for (Measurement measurement in measurements) {
-      List<String> parsedMeasurement = [];  // one row of data
+      List<String> parsedMeasurement = []; // one row of data
       parsedMeasurement.add(measurement.time.toIso8601String());
       parsedMeasurement
           .addAll(measurement.data.map((e) => e.toString()).toList());
       parsedMeasurements.add(parsedMeasurement);
     }
-   
+
     apiRawDataCloud.appendData(parsedMeasurements);
     measurements.clear();
   }
@@ -147,6 +166,6 @@ class DataDecoder {
 class Measurement {
   final List<int> data;
   final DateTime time;
-
-  Measurement(this.data, this.time);
+  final List<int> statuses;
+  Measurement(this.data, this.time, this.statuses);
 }

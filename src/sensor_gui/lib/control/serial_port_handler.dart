@@ -11,18 +11,16 @@ class SerialPortHandler {
       true; // unsucessful opening, after closing port, try to open it only once again
   SerialPort? serialPort;
   Stream<String>? receivedData;
-  Stream<List<int>>? decodedDataStream;
+  Stream<Measurement?>? decodedDataStream;
   List<Measurement> measuredData = [];
   // DataDecoder used for saving file and decoding received data
   DataDecoder decoder = DataDecoder();
 
   // Constructor
   SerialPortHandler(this.baudRate, this.portName);
-    
-  
 
   /// Closes the serial port
-  Future<bool> closePort() async{
+  Future<bool> closePort() async {
     return true;
   }
 

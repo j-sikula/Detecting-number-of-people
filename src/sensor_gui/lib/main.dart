@@ -58,18 +58,20 @@ class ExampleAppState extends State<ExampleApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: ThemeData.light(), // Light theme
-      darkTheme: ThemeData.dark(), // Dark theme
-      themeMode: ThemeMode.system, // Use system theme mode
+        theme: ThemeData.light(), // Light theme
+        darkTheme: ThemeData.dark(), // Dark theme
+        themeMode: ThemeMode.system, // Use system theme mode
 
-      home: Scaffold(
+        home: Scaffold(
           appBar: AppBar(
             title: const Text('People counter'),
           ),
-          body: const SizedBox(
-            width: 400,
-            child: SerialPortSelector(),
-          )),
-    );
+          body: const SingleChildScrollView(
+              scrollDirection: Axis.vertical,
+              child: SizedBox(
+                width: 400,
+                child: SerialPortSelector(),
+              )),
+        ));
   }
 }

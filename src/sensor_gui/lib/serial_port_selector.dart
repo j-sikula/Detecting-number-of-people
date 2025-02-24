@@ -178,7 +178,8 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
             },
           ),
         ),
-        Expanded(
+        Container(
+          color: Theme.of(context).colorScheme.onSecondary,
           child: SensorDataVisualiser(
               key: _sensorDataVisualiserKey,
               serialPortHandler: serialPortHandler),

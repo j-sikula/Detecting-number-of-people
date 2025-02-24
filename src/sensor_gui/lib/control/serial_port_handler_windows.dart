@@ -29,8 +29,7 @@ class SerialPortHandlerWindows extends SerialPortHandler {
       });
 
       decodedDataStream = reader!.stream.map((data) {
-        return decoder.decode(data)?.data ??
-            []; // Decode the received data, return the data if it is not null
+        return decoder.decode(data); // Decode the received data return the Measurement? object
       });
 
       return true;
