@@ -137,13 +137,13 @@ void startContinuousMeasurement(QueueHandle_t data_to_sd_queue)
 					measurement[loop].distance_mm[i] = Results.distance_mm[i];
 					measurement[loop].status[i] = Results.target_status[i];
 				}
-/*
-				printf("\nData\n%s", measurement[loop].timestamp);
+
+				printf("\nData\n%s\n", measurement[loop].timestamp);
 
 				for (i = 0; i < VL53L7CX_RESOLUTION_8X8; i++)
 				{
-					printf("%4d;%d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i], Results.target_status[VL53L7CX_NB_TARGET_PER_ZONE * i]);
-				}*/
+					printf("%d;%d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i], Results.target_status[VL53L7CX_NB_TARGET_PER_ZONE * i]);
+				}
 				loop++;
 			}
 

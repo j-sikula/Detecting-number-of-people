@@ -22,7 +22,11 @@ class DataDecoder {
   DataDecoder() {
     apiRawDataCloud.initGoogleAPI();
     Timer.periodic(const Duration(seconds: 10), (timer) {
-      uploadDataToGoogleSheets();
+      if (measurements.isNotEmpty) {
+        measurements.clear();
+        allMeasurements.clear();
+        //uploadDataToGoogleSheets();
+      }
     });
     apiPeopleCounter.initGoogleAPI();
     peopleCounter = PeopleCounter(apiPeopleCounter);
@@ -69,7 +73,6 @@ class DataDecoder {
           .replaceAll(RegExp(r'\s+'),
               ' ') // Replace multiple spaces with a single space
           .split(' ')
-          .skip(1)
           .map((e) =>
               int.tryParse(e.split(";").first) ??
               0) // Convert the data to integers
@@ -79,7 +82,6 @@ class DataDecoder {
           .replaceAll(RegExp(r'\s+'),
               ' ') // Replace multiple spaces with a single space
           .split(' ')
-          .skip(1)
           .map((e) =>
               int.tryParse(e.split(";").last) ??
               0) // Convert the data to integers

@@ -158,7 +158,6 @@ void vWifiTask()
 	// Obtain time after connecting to Wi-Fi
 	if (obtain_time())
 	{
-		get_google_sheets_data(SPREADSHEET_ID, "Sheet1!A1:B2");
 		char *access_token = generate_access_token();
 		if (access_token != NULL)
 		{

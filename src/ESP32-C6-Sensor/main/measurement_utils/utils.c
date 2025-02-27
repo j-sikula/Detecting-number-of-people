@@ -11,7 +11,7 @@ char *get_current_time(void)
 {
 	time_t rawtime;
 	struct tm *timeinfo;
-	char buffer[DATE_TIME_LENGTH-4];
+	char buffer[DATE_TIME_LENGTH-3];
 
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
@@ -20,10 +20,10 @@ char *get_current_time(void)
 	gettimeofday(&tv, NULL);
 	uint16_t milliseconds = tv.tv_usec / 1000;
 
-	strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+	strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", timeinfo);
 
-	char *current_time = (char *)malloc(DATE_TIME_LENGTH + 10);
-	snprintf(current_time, DATE_TIME_LENGTH+2, "%s,%d", buffer, milliseconds);
+	char *current_time = (char *)malloc(DATE_TIME_LENGTH + 4);
+	snprintf(current_time, DATE_TIME_LENGTH+3, "%s,%d", buffer, milliseconds);
 
 	return current_time;
 }
