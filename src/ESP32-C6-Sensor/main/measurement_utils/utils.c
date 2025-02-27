@@ -11,19 +11,19 @@ char *get_current_time(void)
 {
 	time_t rawtime;
 	struct tm *timeinfo;
-	char buffer[DATE_TIME_LENGTH];
+	char buffer[DATE_TIME_LENGTH-4];
 
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-	int milliseconds = tv.tv_usec / 1000;
+	uint16_t milliseconds = tv.tv_usec / 1000;
 
 	strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
 
 	char *current_time = (char *)malloc(DATE_TIME_LENGTH + 10);
-	snprintf(current_time, DATE_TIME_LENGTH + 10, "%s,%d", buffer, milliseconds);
+	snprintf(current_time, DATE_TIME_LENGTH+2, "%s,%d", buffer, milliseconds);
 
 	return current_time;
 }
@@ -37,7 +37,7 @@ char *get_current_date(void)
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
 
-	strftime(buffer, 11, "%Y_%m_%d", timeinfo);
+	strftime(buffer, 11, "%Y%m%d", timeinfo);
 
 	return buffer;
 }
@@ -88,18 +88,18 @@ char *measurement_array_to_string(measurement_t *measurement)
 		return NULL;
 	}
 
-	snprintf(buffer, DATE_TIME_LENGTH, "%s;", measurement->timestamp);
+	snprintf(buffer, DATE_TIME_LENGTH+2, "%s", measurement->timestamp);
 	free(measurement->timestamp);
 	char temp[5];
 
 	for (int j = 0; j < N_ZONES; j++)
 	{
-		snprintf(temp, DATE_TIME_LENGTH, "%d;", measurement->distance_mm[j]);
+		snprintf(temp, DATE_TIME_LENGTH, ";%d", measurement->distance_mm[j]);
 		strcat(buffer, temp);
 	}
 	for (int j = 0; j < N_ZONES; j++)
 	{
-		snprintf(temp, DATE_TIME_LENGTH, "%d;", measurement->status[j]);
+		snprintf(temp, DATE_TIME_LENGTH, ";%d", measurement->status[j]);
 		strcat(buffer, temp);
 	}
 

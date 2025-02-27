@@ -54,12 +54,7 @@ void init_sd_card()
 
     // Card has been initialized, print its properties
     sdmmc_card_print_info(stdout, card);
-    write_to_sd_card("2025_02.csv", "SD card initialized\n");
-    write_to_sd_card("2025-02-26.csv", "SD card initialized\n");
-    char *data = read_data("202.csv", 1000);
-    write_to_sd_card("2025_02_26.csv", "SD card initialized\n");
-    printf("Data: %s\n", data);
-    free(data);
+
 }
 
 void write_to_sd_card(const char *filename, const char *data)
