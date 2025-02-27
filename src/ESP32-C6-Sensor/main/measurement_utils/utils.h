@@ -4,7 +4,9 @@
 #include <stdint.h>
 #include "nvs_flash.h" //non volatile storage
 #include <esp_sntp.h>
+#include "sensor.h"
 
+#define DATE_TIME_LENGTH 23 //for example 2025-02-13 12:23:26,874
 
 /**
  * @brief Allocate memory for a string containing the current time
@@ -31,5 +33,14 @@ uint8_t obtain_time(void);
  *
  */
 void initialize_sntp(void);
+
+/**
+ * @brief Convert measurement array to string
+ * structure of string: date_time;64x 4 digits depth; 64x 3 digits status;\n
+ * @param measurement array - size MEASUREMENT_LOOP_COUNT
+ * @return string containing all measurements
+ * @note Need to free the memory after use
+ */
+char *measurement_array_to_string(measurement_t *measurement);
 
 #endif // UTILS_H

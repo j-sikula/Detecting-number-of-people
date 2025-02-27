@@ -79,7 +79,7 @@ static void configure_led(void)
 
 #endif
 
-static QueueHandle_t measurementQueue;
+static QueueHandle_t data_to_sd_queue;
 
 void vTaskLoop();
 void vWifiTask();
@@ -97,8 +97,8 @@ void app_main(void)
 	/* Configure the peripheral according to the LED type */
 	configure_led();
 
-	measurementQueue = xQueueCreate(10, sizeof(measurement_t *));
-	if (measurementQueue == NULL)
+	data_to_sd_queue = xQueueCreate(10, sizeof(measurement_t *));
+	if (data_to_sd_queue == NULL)
 	{
 		ESP_LOGE("app_main", "Failed to create queue");
 		return;
@@ -106,10 +106,10 @@ void app_main(void)
 
 	// Start the i2c scanner task
 
-	//xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 5, NULL);
+	xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 5, NULL);
 
-	//xTaskCreate(vWifiTask, "wifi_task", 32 * 1024, NULL, 4, NULL);
-	xTaskCreate(vTaskSDCard, "sd_card_task", 32* 1024, NULL, 4, NULL);
+	xTaskCreate(vWifiTask, "wifi_task", 32 * 1024, NULL, 4, NULL);
+	xTaskCreate(vTaskSDCard, "sd_card_task", 32 * 1024, NULL, 4, NULL);
 	while (1)
 	{
 		// ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF");
@@ -123,6 +123,21 @@ void app_main(void)
 void vTaskSDCard()
 {
 	init_sd_card();
+
+	while (true)
+	{
+		measurement_t *data;
+		if (xQueueReceive(data_to_sd_queue, &data, portMAX_DELAY) == pdPASS)
+		{
+			ESP_LOGI("vTaskSDCard", "Received data from queue");
+			char *date = get_current_date();
+			save_raw_data(date, data);
+			free(date);
+			check_heap_memory();
+		}
+		vTaskDelay(500 / portTICK_PERIOD_MS);
+	}
+
 	vTaskDelete(NULL);
 }
 
@@ -131,7 +146,7 @@ void vTaskLoop()
 	// Initialize the sensor.
 	initVL53L7CX();
 	check_heap_memory();
-	startContinuousMeasurement(measurementQueue);
+	startContinuousMeasurement(data_to_sd_queue);
 	// Delete this task if it exits from the loop above
 	vTaskDelete(NULL);
 }
@@ -147,22 +162,6 @@ void vWifiTask()
 		char *access_token = generate_access_token();
 		if (access_token != NULL)
 		{
-			create_new_sheet(SPREADSHEET_ID, "2025_02_18", access_token);
-			update_google_sheets_data(SPREADSHEET_ID, get_current_time(), "Sheet2!C1", access_token);
-
-			while (true)
-			{
-				measurement_t *receivedMeasurement;
-				if (xQueueReceive(measurementQueue, &receivedMeasurement, portMAX_DELAY) == pdPASS)
-				{
-					ESP_LOGI("measurement", "Received measurement %s\n", receivedMeasurement->timestamp);
-					char *date = get_current_date();
-					append_google_sheets_data(SPREADSHEET_ID, receivedMeasurement, date, access_token);
-					free(date);
-					check_heap_memory();
-				}
-				vTaskDelay(500 / portTICK_PERIOD_MS);
-			}
 		}
 	}
 

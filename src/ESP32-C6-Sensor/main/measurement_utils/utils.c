@@ -9,36 +9,35 @@ static const char *TAG = "utils";
 
 char *get_current_time(void)
 {
-    time_t rawtime;
-    struct tm *timeinfo;
-    char buffer[80];
+	time_t rawtime;
+	struct tm *timeinfo;
+	char buffer[DATE_TIME_LENGTH];
 
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
 
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    int milliseconds = tv.tv_usec / 1000;
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	int milliseconds = tv.tv_usec / 1000;
 
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+	strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
 
-    
-	char *current_time = (char *)malloc(89 * sizeof(char));
-    snprintf(current_time, 89*sizeof(char), "%s,%d", buffer, milliseconds);
-	
-    return current_time;
+	char *current_time = (char *)malloc(DATE_TIME_LENGTH + 10);
+	snprintf(current_time, DATE_TIME_LENGTH + 10, "%s,%d", buffer, milliseconds);
+
+	return current_time;
 }
 
 char *get_current_date(void)
 {
-    time_t rawtime;
-    struct tm *timeinfo;
-    char *buffer = (char *)malloc(11 * sizeof(char));
+	time_t rawtime;
+	struct tm *timeinfo;
+	char *buffer = (char *)malloc(11 * sizeof(char));
 
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
 
-    strftime(buffer, sizeof(buffer), "%Y_%m_%d", timeinfo);
+	strftime(buffer, 11, "%Y_%m_%d", timeinfo);
 
 	return buffer;
 }
@@ -63,10 +62,12 @@ uint8_t obtain_time(void)
 	{
 		ESP_LOGE(TAG, "Failed to obtain time");
 		return 0;
-	} else {
+	}
+	else
+	{
 		ESP_LOGI(TAG, "Time is set");
 		return 1;
-		//green_led_intensity = 100;
+		// green_led_intensity = 100;
 	}
 }
 
@@ -76,4 +77,33 @@ void initialize_sntp(void)
 	esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
 	esp_sntp_setservername(0, "pool.ntp.org");
 	esp_sntp_init();
+}
+
+char *measurement_array_to_string(measurement_t *measurement)
+{
+	char *buffer = (char *)malloc(MEASUREMENT_IN_CHAR_LENGTH * sizeof(char));
+	if (buffer == NULL)
+	{
+		ESP_LOGE("measurement_array_to_string", "Failed to allocate memory");
+		return NULL;
+	}
+
+	snprintf(buffer, DATE_TIME_LENGTH, "%s;", measurement->timestamp);
+	free(measurement->timestamp);
+	char temp[5];
+
+	for (int j = 0; j < N_ZONES; j++)
+	{
+		snprintf(temp, DATE_TIME_LENGTH, "%d;", measurement->distance_mm[j]);
+		strcat(buffer, temp);
+	}
+	for (int j = 0; j < N_ZONES; j++)
+	{
+		snprintf(temp, DATE_TIME_LENGTH, "%d;", measurement->status[j]);
+		strcat(buffer, temp);
+	}
+
+	strcat(buffer, "\n");
+
+	return buffer;
 }

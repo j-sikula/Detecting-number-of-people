@@ -1,6 +1,7 @@
 #include "sensor.h"
 #include "esp_log.h"
 #include "measurement_utils/utils.h"
+#include "string.h"
 
 uint8_t is_measuring = 1;
 uint8_t status, loop, isAlive, isReady, i;
@@ -101,19 +102,19 @@ void initVL53L7CX()
 	ESP_LOGI("sensor", "Current integration time is : %d ms", (int)integration_time_ms);
 }
 
-void startContinuousMeasurement(QueueHandle_t measurementQueue)
+void startContinuousMeasurement(QueueHandle_t data_to_sd_queue)
 {
 	status = vl53l7cx_start_ranging(&Dev);
 	while (is_measuring)
 	{
 		loop = 0;
-		measurement_t* measurement = (measurement_t*)malloc(MEASUREMENT_LOOP_COUNT * sizeof(measurement_t));
+		measurement_t *measurement = (measurement_t *)malloc(MEASUREMENT_LOOP_COUNT * sizeof(measurement_t));
 		if (measurement == NULL)
 		{
 			ESP_LOGE("vTaskLoop", "Failed to allocate memory for measurement");
 			return;
 		}
-	
+
 		while (loop < MEASUREMENT_LOOP_COUNT)
 		{
 			/* Use polling function to know when a new measurement is ready.
@@ -129,21 +130,20 @@ void startContinuousMeasurement(QueueHandle_t measurementQueue)
 				/* As the sensor is set in 8x8 mode by default, we have a total
 				 * of 64 zones to print.
 				 */
-				
+
 				measurement[loop].timestamp = get_current_time();
 				for (i = 0; i < N_ZONES; i++)
 				{
 					measurement[loop].distance_mm[i] = Results.distance_mm[i];
+					measurement[loop].status[i] = Results.target_status[i];
 				}
-
-
+/*
 				printf("\nData\n%s", measurement[loop].timestamp);
 
-				
 				for (i = 0; i < VL53L7CX_RESOLUTION_8X8; i++)
 				{
 					printf("%4d;%d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i], Results.target_status[VL53L7CX_NB_TARGET_PER_ZONE * i]);
-				}
+				}*/
 				loop++;
 			}
 
@@ -151,12 +151,12 @@ void startContinuousMeasurement(QueueHandle_t measurementQueue)
 			 * file, not in API) */
 			VL53L7CX_WaitMs(&(Dev.platform), 10);
 		}
-		free(measurement);
-/*
-		if (xQueueSend(measurementQueue, &measurement, portMAX_DELAY) != pdPASS)
+		
+
+		if (xQueueSend(data_to_sd_queue, &measurement, portMAX_DELAY) != pdPASS)
 		{
-			ESP_LOGE("vTaskLoop", "Failed to send measurement to queue");
-		}*/
+			ESP_LOGE("sensor", "Failed to send measurement data to queue");
+		}
 	}
 	status = vl53l7cx_stop_ranging(&Dev);
 }

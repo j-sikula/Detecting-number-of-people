@@ -12,10 +12,13 @@
 #define RANGING_MODE VL53L7CX_RANGING_MODE_CONTINUOUS
 
 #define MEASUREMENT_LOOP_COUNT 100
+                                    //date_time;64x 5 digits depth; 64x 3 digits status;\n
+#define MEASUREMENT_IN_CHAR_LENGTH (DATE_TIME_LENGTH+RESOLUTION*(6+4)+2)
 
 typedef struct
 {
     uint16_t distance_mm[N_ZONES];
+    uint8_t status[N_ZONES];
     char *timestamp;
 } measurement_t;
 
@@ -29,6 +32,6 @@ void initVL53L7CX();
  * @brief Start continuous measurement.
  * Starts the ranging and loops until the measurement is stopped.
  */
-void startContinuousMeasurement(QueueHandle_t measurementQueue);
+void startContinuousMeasurement(QueueHandle_t data_to_sd_queue);
 
 #endif // SENSOR_H
