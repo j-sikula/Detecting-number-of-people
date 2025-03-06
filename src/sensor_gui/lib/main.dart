@@ -33,7 +33,7 @@ import 'package:window_size/window_size.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   if (Platform.isWindows) {
-    setWindowTitle('VL553L7 data visualiser');
+    setWindowTitle('VL53L7CX data visualiser');
   }
   runApp(const ExampleApp());
 }

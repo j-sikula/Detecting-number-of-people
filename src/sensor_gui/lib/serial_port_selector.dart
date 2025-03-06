@@ -160,7 +160,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
             ),
             ElevatedButton(
               onPressed: onBtnSetSurfacePressed,
-              child: const Text('Set Surface'),
+              child: const Text('Set Background'),
             ),
           ],
         ),
