@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "nvs_flash.h" //non volatile storage
 #include <esp_sntp.h>
-#include "sensor.h"
+#include "measurement_utils/sensor.h"
 
 #define DATE_TIME_LENGTH 23 //for example 2025-02-13 12:23:26,874
 

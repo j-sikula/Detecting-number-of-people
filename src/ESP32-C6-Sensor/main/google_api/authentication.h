@@ -22,5 +22,6 @@ char *exchange_jwt_for_access_token(const char *jwt);
  */
 char *generate_access_token();
 
+void checkAccessTokenValidity(char* access_token);
 
 #endif // AUTHENTICATION_H

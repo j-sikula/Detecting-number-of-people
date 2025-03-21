@@ -11,12 +11,15 @@
 #include "lwip/sockets.h"     //needed for http
 #include "mbedtls/ctr_drbg.h" //needed for mbedtls_ctr_drbg_random
 #include "google_api.h"
-#include "keys.h" //email and private key
+#include "keys.h"          //email and private key
+#include "freertos/task.h" //task delay
+#include "time.h"          //time
 
 extern const uint8_t server_cert_pem_start[] asm("_binary_server_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_server_cert_pem_end");
 
 static const char *TAG = "api_authentication";
+time_t last_access_token_time = 0;
 
 char *create_jwt(const char *client_email, const char *private_key)
 {
@@ -24,11 +27,11 @@ char *create_jwt(const char *client_email, const char *private_key)
     const char *header = "{\"alg\":\"RS256\",\"typ\":\"JWT\"}";
 
     // Create JWT payload
-    time_t now = time(NULL);
+    last_access_token_time = time(NULL);
     char payload[512];
     snprintf(payload, sizeof(payload),
              "{\"iss\":\"%s\",\"sub\":\"%s\",\"aud\":\"https://oauth2.googleapis.com/token\",\"iat\":%lld,\"exp\":%lld,\"scope\":\"https://www.googleapis.com/auth/spreadsheets\"}",
-             client_email, client_email, now, now + 3600);
+             client_email, client_email, last_access_token_time, last_access_token_time + 3600); // valid 3600 s
 
     // Base64 encode header and payload
     char header_base64[256];
@@ -148,4 +151,18 @@ char *generate_access_token()
     free(jwt);
 
     return access_token;
+}
+
+void checkAccessTokenValidity(char *access_token)
+{
+    if (time(NULL) - last_access_token_time < 3400)
+    {
+        return;
+    }
+    if (access_token != NULL)
+    {
+        free(access_token);
+        access_token = NULL;
+    }
+    access_token = generate_access_token();
 }

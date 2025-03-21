@@ -24,6 +24,7 @@
 #include "google_api/keys.h"
 #include "google_api/google_api.h"
 #include "google_api/authentication.h"
+#include "people_counter/people_counter.h"
 
 #include "sd_card/sd_card.h"
 
@@ -41,6 +42,8 @@ static uint8_t s_led_state = 0;
 static led_strip_handle_t led_strip;
 
 static uint8_t green_led_intensity = 16;
+
+static char *google_api_access_token = NULL;
 
 static void blink_led(void)
 {
@@ -80,6 +83,7 @@ static void configure_led(void)
 #endif
 
 static QueueHandle_t data_to_sd_queue;
+static QueueHandle_t data_to_google_sheets_queue;
 
 void vTaskLoop();
 void vWifiTask();
@@ -100,16 +104,21 @@ void app_main(void)
 	data_to_sd_queue = xQueueCreate(10, sizeof(measurement_t *));
 	if (data_to_sd_queue == NULL)
 	{
-		ESP_LOGE("app_main", "Failed to create queue");
+		ESP_LOGE("app_main", "Failed to create queue for SD card");
 		return;
 	}
 
-	// Start the i2c scanner task
+	data_to_google_sheets_queue = xQueueCreate(10, sizeof(people_count_t *));
+	if (data_to_google_sheets_queue == NULL)
+	{
+		ESP_LOGE("app_main", "Failed to create queue for Google Sheets");
+		return;
+	}
 
-	xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 5, NULL);
+	xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 6, NULL);
 
 	xTaskCreate(vWifiTask, "wifi_task", 32 * 1024, NULL, 4, NULL);
-	xTaskCreate(vTaskSDCard, "sd_card_task", 32 * 1024, NULL, 4, NULL);
+	xTaskCreate(vTaskSDCard, "sd_card_task", 32 * 1024, NULL, 5, NULL);
 	while (1)
 	{
 		// ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF");
@@ -146,7 +155,7 @@ void vTaskLoop()
 	// Initialize the sensor.
 	initVL53L7CX();
 	check_heap_memory();
-	startContinuousMeasurement(data_to_sd_queue);
+	startContinuousMeasurement(data_to_sd_queue, data_to_google_sheets_queue);
 	// Delete this task if it exits from the loop above
 	vTaskDelete(NULL);
 }
@@ -158,9 +167,21 @@ void vWifiTask()
 	// Obtain time after connecting to Wi-Fi
 	if (obtain_time())
 	{
-		char *access_token = generate_access_token();
-		if (access_token != NULL)
+		google_api_access_token = generate_access_token();
+		while (true)
 		{
+			people_count_t *data;
+			if (xQueueReceive(data_to_google_sheets_queue, &data, portMAX_DELAY) == pdPASS)
+			{
+				ESP_LOGI("vWifiTask", "Received data from queue");
+				checkAccessTokenValidity(google_api_access_token);
+
+				char *date = get_current_date();
+				upload_people_count_to_google_sheets(SPREADSHEET_ID, data, date, google_api_access_token);
+				free(date);
+				check_heap_memory();
+			}
+			vTaskDelay(500 / portTICK_PERIOD_MS);
 		}
 	}
 

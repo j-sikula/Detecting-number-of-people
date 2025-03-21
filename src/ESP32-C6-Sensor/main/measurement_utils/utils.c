@@ -92,12 +92,12 @@ char *measurement_array_to_string(measurement_t *measurement)
 	free(measurement->timestamp);
 	char temp[5];
 
-	for (int j = 0; j < N_ZONES; j++)
+	for (int j = 0; j < N_PIXELS; j++)
 	{
 		snprintf(temp, DATE_TIME_LENGTH, ";%d", measurement->distance_mm[j]);
 		strcat(buffer, temp);
 	}
-	for (int j = 0; j < N_ZONES; j++)
+	for (int j = 0; j < N_PIXELS; j++)
 	{
 		snprintf(temp, DATE_TIME_LENGTH, ";%d", measurement->status[j]);
 		strcat(buffer, temp);

@@ -2,6 +2,7 @@
 #include "esp_log.h"
 #include "measurement_utils/utils.h"
 #include "string.h"
+#include "people_counter/people_counter.h"
 
 uint8_t is_measuring = 1;
 uint8_t status, loop, isAlive, isReady, i;
@@ -102,9 +103,10 @@ void initVL53L7CX()
 	ESP_LOGI("sensor", "Current integration time is : %d ms", (int)integration_time_ms);
 }
 
-void startContinuousMeasurement(QueueHandle_t data_to_sd_queue)
+void startContinuousMeasurement(QueueHandle_t data_to_sd_queue, QueueHandle_t data_to_google_sheets_queue)
 {
 	status = vl53l7cx_start_ranging(&Dev);
+	uint16_t *background = NULL;
 	while (is_measuring)
 	{
 		loop = 0;
@@ -132,24 +134,37 @@ void startContinuousMeasurement(QueueHandle_t data_to_sd_queue)
 				 */
 
 				measurement[loop].timestamp = get_current_time();
-				for (i = 0; i < N_ZONES; i++)
+				for (i = 0; i < N_PIXELS; i++)
 				{
 					measurement[loop].distance_mm[i] = Results.distance_mm[i];
 					measurement[loop].status[i] = Results.target_status[i];
 				}
 
+				if (background != NULL)
+				{
+					count_people(&measurement[loop], background, data_to_google_sheets_queue);
+				}
+
+#ifdef PRINT_DATA_TO_UART
 				printf("\nData\n%s\n", measurement[loop].timestamp);
 
 				for (i = 0; i < VL53L7CX_RESOLUTION_8X8; i++)
 				{
 					printf("%d;%d ", Results.distance_mm[VL53L7CX_NB_TARGET_PER_ZONE * i], Results.target_status[VL53L7CX_NB_TARGET_PER_ZONE * i]);
 				}
+#endif
+
 				loop++;
 			}
 
 			/* Wait a few ms to avoid too high polling (function in platform
 			 * file, not in API) */
 			VL53L7CX_WaitMs(&(Dev.platform), 10);
+		}
+
+		if (background == NULL)
+		{
+			background = compute_background_data(measurement);
 		}
 		
 
@@ -159,4 +174,5 @@ void startContinuousMeasurement(QueueHandle_t data_to_sd_queue)
 		}
 	}
 	status = vl53l7cx_stop_ranging(&Dev);
+	free(background);
 }

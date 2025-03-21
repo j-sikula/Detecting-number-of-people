@@ -105,6 +105,7 @@
         "*.inc": "c",
         "cjson.h": "c",
         "authentication.h": "c",
-        "sensor.h": "c"
+        "sensor.h": "c",
+        "people_counter.h": "c"
     }
 }

@@ -159,7 +159,7 @@ void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, 
         char row_buffer[1024];
         snprintf(row_buffer, sizeof(row_buffer), "[\"%s\"", data[i].timestamp);
 
-        for (int j = 0; j < N_ZONES; j++)
+        for (int j = 0; j < N_PIXELS; j++)
         {
             char value_buffer[16];
             snprintf(value_buffer, sizeof(value_buffer), ",%d", data[i].distance_mm[j]);
@@ -197,6 +197,37 @@ void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, 
         // reset the counter when the request is successful
         n_request_repeated = 0;
     }
+    free(data);
+}
+
+void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_count_t *data, const char *sheet_name, const char *access_token)
+{
+    static uint8_t n_request_repeated = 0;
+    char url[512];
+    snprintf(url, sizeof(url), "https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=RAW", spreadsheet_id, sheet_name);
+    char *dataJSON = (char *)malloc(JSON_UPLOAD_PEOPLE_COUNT_LENGTH * sizeof(char));
+
+    snprintf(dataJSON, JSON_UPLOAD_PEOPLE_COUNT_LENGTH * sizeof(char), "{\"range\":\"%s\",\"majorDimension\":\"ROWS\",\"values\":[\"%s\",%d]}", sheet_name, data->timestamp, data->people_count);
+    
+    uint8_t status_code = _send_api_request(url, HTTP_METHOD_POST, dataJSON, 30 * 1024, access_token);
+
+    // when sheet does not exist, create a new sheet and retry the request
+    if (status_code != 200)
+    {
+        if (n_request_repeated < REQUEST_RETRIES)
+        {
+            n_request_repeated++;
+            ESP_LOGI(TAG, "Creating a new Sheet and retrying the request");
+            create_new_sheet(spreadsheet_id, sheet_name, access_token);
+            upload_people_count_to_google_sheets(spreadsheet_id, data, sheet_name, access_token);
+        }
+    }
+    else
+    {
+        // reset the counter when the request is successful
+        n_request_repeated = 0;
+    }
+    free(data->timestamp);
     free(data);
 }
 
