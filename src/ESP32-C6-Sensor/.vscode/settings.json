@@ -106,6 +106,9 @@
         "cjson.h": "c",
         "authentication.h": "c",
         "sensor.h": "c",
-        "people_counter.h": "c"
+        "people_counter.h": "c",
+        "gpio.h": "c",
+        "queue.h": "c",
+        "task.h": "c"
     }
 }

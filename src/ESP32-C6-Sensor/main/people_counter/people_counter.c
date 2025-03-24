@@ -19,10 +19,18 @@ void count_people(measurement_t *data, uint16_t *background, QueueHandle_t data_
         uint8_t nPixelsAboveThreshold = 0;
         for (int j = 0; j < (64 / N_ZONES); j++)
         {
+            #ifndef TRANSPOSE_MATRIX
             if (heightData[i * 64 / N_ZONES + j] > HEIGHT_THRESHOLD)
             {
                 nPixelsAboveThreshold++;
             }
+            #endif
+            #ifdef TRANSPOSE_MATRIX
+            if (heightData[i * 8 / N_ZONES + j % (8 / N_ZONES) + j / (8 / N_ZONES) * 8] > HEIGHT_THRESHOLD) // matrix transposed
+            {
+                nPixelsAboveThreshold++;
+            }
+            #endif
         }
 
         if (nPixelsAboveThreshold > N_PIXELS_TO_ACTIVATE_ZONE)
@@ -46,13 +54,13 @@ void count_people(measurement_t *data, uint16_t *background, QueueHandle_t data_
             // If all the zones are exited, the people count is updated
             if (all_elements(zone_exited, N_ZONES, true))
             {
-                if (position_entered == 0)
+                if (position_entered == EXIT_POSITION)
                 {
                     current_people_count--;
                     ESP_LOGI("PeopleCounter", "Person exited room");
                     upload_people_count(data_to_google_sheets_queue);
                 }
-                if (position_entered == N_ZONES - 1)
+                if (position_entered == ENTER_POSITION)
                 {
                     current_people_count++;
                     ESP_LOGI("PeopleCounter", "Person entered room");

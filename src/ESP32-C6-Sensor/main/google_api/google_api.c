@@ -1,6 +1,7 @@
 #include "google_api.h"
 #include "keys.h"    //API_KEY
 #include "esp_mac.h" //needed for http
+#include "esp_wifi.h" //needed for esp_wifi_is_connected
 #include "esp_http_client.h"
 #include "lwip/sockets.h" //needed for http
 #include "esp_log.h"
@@ -344,13 +345,7 @@ uint16_t _send_api_request(const char *url, esp_http_client_method_t method, cha
         ESP_LOGE("API", "Failed to load JSON payload");
         return 400;
     }
-    // Check if Wi-Fi is connected
-    if (esp_wifi_is_connected() == false)
-    {
-        ESP_LOGE("API", "Wi-Fi is not connected");
-        free(data);
-        return 503; // Service Unavailable
-    }
+    
     
     http_response_t response = {0};
 

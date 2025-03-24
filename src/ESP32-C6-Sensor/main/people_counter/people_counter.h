@@ -11,6 +11,11 @@
 #define N_PIXELS_TO_ACTIVATE_ZONE 5
 #define HEIGHT_THRESHOLD 1000
 #define NOT_ENTERED 255
+#define TRANSPOSE_MATRIX // transpose matrix if the sensor is rotated 90 degrees
+
+#define ENTER_POSITION 0
+#define EXIT_POSITION N_ZONES - 1
+
 
 typedef struct
 {

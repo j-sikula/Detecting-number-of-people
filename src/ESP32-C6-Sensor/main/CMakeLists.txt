@@ -8,5 +8,6 @@ idf_component_register(SRCS "main.c"
                         SRCS "measurement_utils/sensor.c"
                         SRCS "sd_card/sd_card.c"
                         SRCS "people_counter/people_counter.c"
+                        SRCS "led_indicator/led_indicator.c"
                        INCLUDE_DIRS "."
                        EMBED_TXTFILES server_cert.pem)

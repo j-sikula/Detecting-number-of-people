@@ -14,7 +14,8 @@
                 "C:/Users/Host/esp/v5.3.1/esp-idf/components/mbedtls/mbedtls/include",
                 "C:/Users/Host/esp/v5.3.1/esp-idf/components/lwip/include",
                 "C:/Users/Host/esp/v5.3.1/esp-idf/components/lwip/lwip/src/include",
-                "C:/Users/Host/esp/v5.3.1/esp-idf/components/log/include"
+                "C:/Users/Host/esp/v5.3.1/esp-idf/components/log/include",
+                "${workspaceFolder}/build/bootloader/config"
             ],
             "browse": {
                 "path": [
