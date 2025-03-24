@@ -197,7 +197,7 @@ void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, 
         // reset the counter when the request is successful
         n_request_repeated = 0;
     }
-    free(data);
+    //free(data); //must be freed in the calling function due to recursion (request retries)
 }
 
 void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_count_t *data, const char *sheet_name, const char *access_token)
@@ -227,8 +227,6 @@ void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_cou
         // reset the counter when the request is successful
         n_request_repeated = 0;
     }
-    free(data->timestamp);
-    free(data);
 }
 
 /**
@@ -346,7 +344,14 @@ uint16_t _send_api_request(const char *url, esp_http_client_method_t method, cha
         ESP_LOGE("API", "Failed to load JSON payload");
         return 400;
     }
-
+    // Check if Wi-Fi is connected
+    if (esp_wifi_is_connected() == false)
+    {
+        ESP_LOGE("API", "Wi-Fi is not connected");
+        free(data);
+        return 503; // Service Unavailable
+    }
+    
     http_response_t response = {0};
 
     esp_http_client_config_t config = {

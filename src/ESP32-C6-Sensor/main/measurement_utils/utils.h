@@ -18,9 +18,16 @@ char *get_current_time(void);
 /**
  * @brief Allocate memory for a string containing the current date
  * @note Need to free the memory after use
- * @return current date in format "YYYY_MM_DD"
+ * @return current date in format "YYYYMMDD"
  */
 char *get_current_date(void);
+
+/**
+ * @brief Allocate memory for a string containing the current week
+ * @note Need to free the memory after use
+ * @return current week in ISO 8601 format "YYYY-WWW"
+ */
+char *get_current_week(void);
 
 /**
  * @brief Set local time from Wi-Fi

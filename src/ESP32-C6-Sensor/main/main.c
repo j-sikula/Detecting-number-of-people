@@ -176,9 +176,11 @@ void vWifiTask()
 				ESP_LOGI("vWifiTask", "Received data from queue");
 				checkAccessTokenValidity(google_api_access_token);
 
-				char *date = get_current_date();
+				char *date = get_current_week();
 				upload_people_count_to_google_sheets(SPREADSHEET_ID, data, date, google_api_access_token);
 				free(date);
+				free(data->timestamp);
+    			free(data);
 				check_heap_memory();
 			}
 			vTaskDelay(500 / portTICK_PERIOD_MS);

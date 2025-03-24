@@ -42,6 +42,20 @@ char *get_current_date(void)
 	return buffer;
 }
 
+char *get_current_week(void)
+{
+    time_t rawtime;
+	struct tm *timeinfo;
+	char *buffer = (char *)malloc(11 * sizeof(char));
+
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+
+	strftime(buffer, 11, "%G-W%V", timeinfo);
+
+	return buffer;
+}
+
 uint8_t obtain_time(void)
 {
 	initialize_sntp();
@@ -50,7 +64,7 @@ uint8_t obtain_time(void)
 	int retry = 0;
 	const int retry_count = 10;
 
-	while (timeinfo.tm_year < (2016 - 1900))
+	while (timeinfo.tm_year < (2016 - 1900))	// wait for time to be set
 	{
 
 		ESP_LOGI(TAG, "Waiting for system time to be set...");
