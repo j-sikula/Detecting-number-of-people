@@ -57,4 +57,6 @@ uint8_t all_elements(uint8_t *array, uint8_t size, uint8_t value);
  */
 uint8_t are_arrays_equal(uint8_t *array1, uint8_t *array2, uint8_t size);
 
+uint16_t median(uint16_t *array, uint8_t size);
+
 #endif // PEOPLE_COUNTER_H

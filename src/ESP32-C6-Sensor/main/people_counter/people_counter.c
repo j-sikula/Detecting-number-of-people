@@ -11,7 +11,7 @@ void count_people(measurement_t *data, uint16_t *background, QueueHandle_t data_
     int16_t heightData[N_PIXELS];
     for (uint8_t j = 0; j < N_PIXELS; j++)
     {
-        heightData[j] = background[j] - data->distance_mm[j];
+        heightData[j] = background[j] - data->distance_mm[j];       
     }
 
     for (uint8_t i = 0; i < N_ZONES; i++)
@@ -89,12 +89,13 @@ uint16_t *compute_background_data(measurement_t *data)
     uint16_t *background = (uint16_t *)malloc(N_PIXELS * sizeof(uint16_t));
     for (uint8_t i = 0; i < N_PIXELS; i++)
     {
-        uint32_t sum = 0;
+        uint16_t zone[MEASUREMENT_LOOP_COUNT];
         for (uint8_t j = 0; j < MEASUREMENT_LOOP_COUNT; j++)
         {
-            sum += data[j].distance_mm[i];
-        } // Compute the background data
-        background[i] = (uint16_t)sum / MEASUREMENT_LOOP_COUNT;
+            zone[j] = data[j].distance_mm[i];
+        } 
+        // Compute the background data
+        background[i] = median(zone, N_PIXELS);
        
         if(i%8==0){
             printf("\n");
@@ -149,3 +150,39 @@ uint8_t are_arrays_equal(uint8_t *array1, uint8_t *array2, uint8_t size)
 }
 
 
+uint16_t median(uint16_t *array, uint8_t size)
+{
+    uint8_t indexes[size];
+    for (uint8_t i = 0; i < size; i++)
+    {
+        indexes[i] = i;
+    }
+    // https://builtin.com/machine-learning/fastest-sorting-algorithm
+    for (uint8_t i = 1; i < size; i++)
+    {
+        uint8_t j = i;
+        while (j > 0 && array[indexes[j - 1]] > array[indexes[j]])
+        {
+            uint8_t temp = indexes[j];
+            indexes[j] = indexes[j - 1];
+            indexes[j - 1] = temp;
+            j--;
+        }
+       
+    }
+    if(size%2 == 0)
+    {
+        return (array[indexes[size / 2]]+array[indexes[size / 2 -1]])/2;
+    }
+    return array[indexes[size / 2]];
+    
+}
+//Median test
+// int main()
+// {
+//     uint16_t test[] = {5, 33, 50, 2, 1, 0, 7, 3, 26};
+//     uint16_t med = median(test, *(&test + 1) - test);
+//     printf("%d", med);
+
+//     return 0;
+// }

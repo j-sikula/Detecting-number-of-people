@@ -165,6 +165,10 @@ void startContinuousMeasurement(QueueHandle_t data_to_sd_queue, QueueHandle_t da
 		if (background == NULL)
 		{
 			background = compute_background_data(measurement);
+			for (i = 0; i < MEASUREMENT_LOOP_COUNT; i++)
+			{
+				printf("%d, ", measurement[i].distance_mm[20]);
+			}
 		}
 		
 

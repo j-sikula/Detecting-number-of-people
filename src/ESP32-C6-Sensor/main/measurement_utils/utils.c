@@ -11,7 +11,7 @@ char *get_current_time(void)
 {
 	time_t rawtime;
 	struct tm *timeinfo;
-	char buffer[DATE_TIME_LENGTH-3];
+	char buffer[DATE_TIME_LENGTH - 3];
 
 	time(&rawtime);
 	timeinfo = localtime(&rawtime);
@@ -23,7 +23,7 @@ char *get_current_time(void)
 	strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", timeinfo);
 
 	char *current_time = (char *)malloc(DATE_TIME_LENGTH + 4);
-	snprintf(current_time, DATE_TIME_LENGTH+3, "%s,%d", buffer, milliseconds);
+	snprintf(current_time, DATE_TIME_LENGTH + 3, "%s,%d", buffer, milliseconds);
 
 	return current_time;
 }
@@ -50,25 +50,21 @@ uint8_t obtain_time(void)
 	int retry = 0;
 	const int retry_count = 10;
 
-	while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count)
+	while (timeinfo.tm_year < (2016 - 1900))
 	{
-		ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+
+		ESP_LOGI(TAG, "Waiting for system time to be set...");
 		vTaskDelay(2000 / portTICK_PERIOD_MS);
 		time(&now);
 		localtime_r(&now, &timeinfo);
+		if (retry++ >= retry_count)
+		{
+			vTaskDelay(10000 / portTICK_PERIOD_MS);
+		}
 	}
 
-	if (retry == retry_count)
-	{
-		ESP_LOGE(TAG, "Failed to obtain time");
-		return 0;
-	}
-	else
-	{
-		ESP_LOGI(TAG, "Time is set");
-		return 1;
-		// green_led_intensity = 100;
-	}
+	ESP_LOGI(TAG, "Time is set");
+	return 1;
 }
 
 void initialize_sntp(void)
@@ -88,7 +84,7 @@ char *measurement_array_to_string(measurement_t *measurement)
 		return NULL;
 	}
 
-	snprintf(buffer, DATE_TIME_LENGTH+2, "%s", measurement->timestamp);
+	snprintf(buffer, DATE_TIME_LENGTH + 2, "%s", measurement->timestamp);
 	free(measurement->timestamp);
 	char temp[5];
 

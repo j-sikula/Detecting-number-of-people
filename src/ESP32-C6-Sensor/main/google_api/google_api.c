@@ -207,7 +207,7 @@ void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_cou
     snprintf(url, sizeof(url), "https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=RAW", spreadsheet_id, sheet_name);
     char *dataJSON = (char *)malloc(JSON_UPLOAD_PEOPLE_COUNT_LENGTH * sizeof(char));
 
-    snprintf(dataJSON, JSON_UPLOAD_PEOPLE_COUNT_LENGTH * sizeof(char), "{\"range\":\"%s\",\"majorDimension\":\"ROWS\",\"values\":[\"%s\",%d]}", sheet_name, data->timestamp, data->people_count);
+    snprintf(dataJSON, JSON_UPLOAD_PEOPLE_COUNT_LENGTH * sizeof(char), "{\"range\":\"%s\",\"majorDimension\":\"ROWS\",\"values\":[[\"%s\",%d]]}", sheet_name, data->timestamp, data->people_count);
     
     uint8_t status_code = _send_api_request(url, HTTP_METHOD_POST, dataJSON, 30 * 1024, access_token);
 
