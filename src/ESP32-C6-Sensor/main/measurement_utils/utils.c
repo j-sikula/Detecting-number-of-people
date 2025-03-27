@@ -117,3 +117,9 @@ char *measurement_array_to_string(measurement_t *measurement)
 
 	return buffer;
 }
+
+void check_heap_memory()
+{
+	size_t free_heap_size = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+	ESP_LOGI("Heap", "Free heap size: %d bytes", free_heap_size);
+}

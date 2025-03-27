@@ -50,4 +50,6 @@ void initialize_sntp(void);
  */
 char *measurement_array_to_string(measurement_t *measurement);
 
+void check_heap_memory();
+
 #endif // UTILS_H

@@ -11,7 +11,7 @@ void count_people(measurement_t *data, uint16_t *background, QueueHandle_t data_
     int16_t heightData[N_PIXELS];
     for (uint8_t j = 0; j < N_PIXELS; j++)
     {
-        heightData[j] = background[j] - data->distance_mm[j];       
+        heightData[j] = background[j] - data->distance_mm[j];
     }
 
     for (uint8_t i = 0; i < N_ZONES; i++)
@@ -19,23 +19,22 @@ void count_people(measurement_t *data, uint16_t *background, QueueHandle_t data_
         uint8_t nPixelsAboveThreshold = 0;
         for (int j = 0; j < (64 / N_ZONES); j++)
         {
-            #ifndef TRANSPOSE_MATRIX
+#ifndef TRANSPOSE_MATRIX
             if (heightData[i * 64 / N_ZONES + j] > HEIGHT_THRESHOLD)
             {
                 nPixelsAboveThreshold++;
             }
-            #endif
-            #ifdef TRANSPOSE_MATRIX
+#endif
+#ifdef TRANSPOSE_MATRIX
             if (heightData[i * 8 / N_ZONES + j % (8 / N_ZONES) + j / (8 / N_ZONES) * 8] > HEIGHT_THRESHOLD) // matrix transposed
             {
                 nPixelsAboveThreshold++;
             }
-            #endif
+#endif
         }
 
         if (nPixelsAboveThreshold > N_PIXELS_TO_ACTIVATE_ZONE)
         {
-            ESP_LOGI("PeopleCounter", "Zone entered");
             zone_entered[i] = true;
             zone_exited[i] = false;
             if (position_entered == NOT_ENTERED && (i == 0 || i == N_ZONES - 1))
@@ -58,12 +57,18 @@ void count_people(measurement_t *data, uint16_t *background, QueueHandle_t data_
                 {
                     current_people_count--;
                     ESP_LOGI("PeopleCounter", "Person exited room");
+#ifdef ENABLE_BLINK_INDICATOR
+                    single_blink(DEFAULT_BLINK_INTENSITY, 0, 0, 5);
+#endif
                     upload_people_count(data_to_google_sheets_queue);
                 }
                 if (position_entered == ENTER_POSITION)
                 {
                     current_people_count++;
                     ESP_LOGI("PeopleCounter", "Person entered room");
+#ifdef ENABLE_BLINK_INDICATOR
+                    single_blink(0, DEFAULT_BLINK_INTENSITY, 0, 5);
+#endif
                     upload_people_count(data_to_google_sheets_queue);
                 }
 
@@ -101,11 +106,12 @@ uint16_t *compute_background_data(measurement_t *data)
         for (uint8_t j = 0; j < MEASUREMENT_LOOP_COUNT; j++)
         {
             zone[j] = data[j].distance_mm[i];
-        } 
+        }
         // Compute the background data
         background[i] = median(zone, N_PIXELS);
-       
-        if(i%8==0){
+
+        if (i % 8 == 0)
+        {
             printf("\n");
         }
         printf("%d;%d ", background[i], data[5].distance_mm[i]);
@@ -157,7 +163,6 @@ uint8_t are_arrays_equal(uint8_t *array1, uint8_t *array2, uint8_t size)
     return true;
 }
 
-
 uint16_t median(uint16_t *array, uint8_t size)
 {
     uint8_t indexes[size];
@@ -176,21 +181,19 @@ uint16_t median(uint16_t *array, uint8_t size)
             indexes[j - 1] = temp;
             j--;
         }
-       
     }
-    if(size%2 == 0)
+    if (size % 2 == 0)
     {
-        return (array[indexes[size / 2]]+array[indexes[size / 2 -1]])/2;
+        return (array[indexes[size / 2]] + array[indexes[size / 2 - 1]]) / 2;
     }
     return array[indexes[size / 2]];
-    
 }
-//Median test
-// int main()
-// {
-//     uint16_t test[] = {5, 33, 50, 2, 1, 0, 7, 3, 26};
-//     uint16_t med = median(test, *(&test + 1) - test);
-//     printf("%d", med);
+// Median test
+//  int main()
+//  {
+//      uint16_t test[] = {5, 33, 50, 2, 1, 0, 7, 3, 26};
+//      uint16_t med = median(test, *(&test + 1) - test);
+//      printf("%d", med);
 
 //     return 0;
 // }

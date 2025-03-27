@@ -38,12 +38,6 @@ void vTaskLoop();
 void vWifiTask();
 void vTaskSDCard();
 
-void check_heap_memory()
-{
-	size_t free_heap_size = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-	ESP_LOGI("Heap", "Free heap size: %d bytes", free_heap_size);
-}
-
 void app_main(void)
 {
 
@@ -68,7 +62,7 @@ void app_main(void)
 
 	xTaskCreate(vWifiTask, "wifi_task", 32 * 1024, NULL, 4, NULL);
 	xTaskCreate(vTaskSDCard, "sd_card_task", 32 * 1024, NULL, 5, NULL);
-	
+	led_loop();
 }
 
 void vTaskSDCard()
@@ -113,17 +107,32 @@ void vWifiTask()
 		stop_led();
 		while (true)
 		{
-			people_count_t *data;
-			if (xQueueReceive(data_to_google_sheets_queue, &data, portMAX_DELAY) == pdPASS)
+
+			if (uxQueueMessagesWaiting(data_to_google_sheets_queue) >= 1)
 			{
+				vTaskDelay(2000 / portTICK_PERIOD_MS); // wait for other possible data
+
+				uint8_t n_data = uxQueueMessagesWaiting(data_to_google_sheets_queue);
 				ESP_LOGI("vWifiTask", "Received data from queue");
 				checkAccessTokenValidity(google_api_access_token);
-
 				char *date = get_current_week();
-				upload_people_count_to_google_sheets(SPREADSHEET_ID, data, date, google_api_access_token);
+				people_count_t *data[n_data];
+
+				for (uint8_t i = 0; i < n_data; i++)
+				{
+					if (xQueueReceive(data_to_google_sheets_queue, &data[i], 0) != pdPASS)
+					{
+						ESP_LOGE("vWifiTask", "Failed to receive data from queue");
+					}
+				}
+
+				upload_people_count_to_google_sheets(SPREADSHEET_ID, data, n_data, date, google_api_access_token);
 				free(date);
-				free(data->timestamp);
-    			free(data);
+				for (uint8_t i = 0; i < n_data; i++)
+				{
+					free(data[i]->timestamp);
+					free(data[i]);
+				}
 				check_heap_memory();
 			}
 			vTaskDelay(500 / portTICK_PERIOD_MS);

@@ -6,7 +6,9 @@
 #include "measurement_utils/sensor.h"
 #include "measurement_utils/utils.h"
 #include "esp_log.h"
+#include "led_indicator/led_indicator.h"
 
+#define ENABLE_BLINK_INDICATOR
 
 #define N_PIXELS_TO_ACTIVATE_ZONE 5
 #define HEIGHT_THRESHOLD 1000

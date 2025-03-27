@@ -10,12 +10,11 @@ static const char *TAG = "SD_CARD";
 void init_sd_card()
 {
     esp_err_t ret;
-
     // Options for mounting the filesystem.
     // If format_if_mount_failed is set to true, SD card will be partitioned and
     // formatted in case when mounting fails.
     esp_vfs_fat_mount_config_t mount_config = {
-        .format_if_mount_failed = SDCARD_FORMAT_ON_MOUNT_FAIL,
+        .format_if_mount_failed = 0,
         .max_files = SDCARD_MAX_OPEN_FILES,
         .allocation_unit_size = SDCARD_ALLOCATION_UNIT_SIZE,
         .disk_status_check_enable = SDCARD_CHECK_DISK_STATUS,

@@ -110,11 +110,16 @@ void startContinuousMeasurement(QueueHandle_t data_to_sd_queue, QueueHandle_t da
 	while (is_measuring)
 	{
 		loop = 0;
+		check_heap_memory();
 		measurement_t *measurement = (measurement_t *)malloc(MEASUREMENT_LOOP_COUNT * sizeof(measurement_t));
 		if (measurement == NULL)
 		{
-			ESP_LOGE("vTaskLoop", "Failed to allocate memory for measurement");
-			return;
+			while(measurement == NULL)	// try to allocate memory until success
+			{
+				ESP_LOGE("vTaskLoop", "Failed to allocate memory for measurement");
+				vTaskDelay(10 / portTICK_PERIOD_MS);
+				measurement = (measurement_t *)malloc(MEASUREMENT_LOOP_COUNT * sizeof(measurement_t));
+			}
 		}
 
 		while (loop < MEASUREMENT_LOOP_COUNT)
@@ -165,6 +170,7 @@ void startContinuousMeasurement(QueueHandle_t data_to_sd_queue, QueueHandle_t da
 		if (background == NULL)
 		{
 			background = compute_background_data(measurement);
+			single_blink(0, 25, 0, 10);
 			for (i = 0; i < MEASUREMENT_LOOP_COUNT; i++)
 			{
 				printf("%d, ", measurement[i].distance_mm[20]);

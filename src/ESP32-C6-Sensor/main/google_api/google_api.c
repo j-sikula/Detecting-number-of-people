@@ -46,6 +46,12 @@ esp_err_t http_event_handler(esp_http_client_event_t *evt)
             response->buffer = realloc(response->buffer, response->buffer_size);
         }
 
+        if (response->buffer == NULL)
+        {
+            ESP_LOGE("http", "Failed to allocate memory for response buffer");
+            return ESP_FAIL;
+        }
+
         memcpy(response->buffer + response->buffer_len, evt->data, evt->data_len);
         response->buffer_len += evt->data_len;
         response->buffer[response->buffer_len] = '\0';
@@ -201,16 +207,24 @@ void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, 
     //free(data); //must be freed in the calling function due to recursion (request retries)
 }
 
-void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_count_t *data, const char *sheet_name, const char *access_token)
+void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_count_t **data, uint8_t n_data, const char *sheet_name, const char *access_token)
 {
     static uint8_t n_request_repeated = 0;
     char url[512];
     snprintf(url, sizeof(url), "https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=RAW", spreadsheet_id, sheet_name);
-    char *dataJSON = (char *)malloc(JSON_UPLOAD_PEOPLE_COUNT_LENGTH * sizeof(char));
+    char *dataJSON = (char *)malloc((JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data-1)*PEOPLE_COUNT_STR_LENGTH) * sizeof(char));
 
-    snprintf(dataJSON, JSON_UPLOAD_PEOPLE_COUNT_LENGTH * sizeof(char), "{\"range\":\"%s\",\"majorDimension\":\"ROWS\",\"values\":[[\"%s\",%d]]}", sheet_name, data->timestamp, data->people_count);
+    snprintf(dataJSON, JSON_UPLOAD_PEOPLE_COUNT_LENGTH * sizeof(char), "{\"range\":\"%s\",\"majorDimension\":\"ROWS\",\"values\":[[\"%s\",%d]", sheet_name, data[0]->timestamp, data[0]->people_count);
     
-    uint8_t status_code = _send_api_request(url, HTTP_METHOD_POST, dataJSON, 30 * 1024, access_token);
+    for(uint8_t i = 1; i < n_data; i++)
+    {
+        char row_buffer[PEOPLE_COUNT_STR_LENGTH];
+        snprintf(row_buffer, sizeof(row_buffer), ",[\"%s\",%d]", data[i]->timestamp, data[i]->people_count);
+        strncat(dataJSON, row_buffer, (JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data-1)*PEOPLE_COUNT_STR_LENGTH) * sizeof(char) - strlen(dataJSON) - 1);
+    }
+    strncat(dataJSON, "]}", (JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data-1)*PEOPLE_COUNT_STR_LENGTH) * sizeof(char) - strlen(dataJSON) - 1);
+    ESP_LOGI(TAG, "Data JSON: %s", dataJSON);
+    uint8_t status_code = _send_api_request(url, HTTP_METHOD_POST, dataJSON, 3 * 1024, access_token);
 
     // when sheet does not exist, create a new sheet and retry the request
     if (status_code != 200)
@@ -220,7 +234,7 @@ void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_cou
             n_request_repeated++;
             ESP_LOGI(TAG, "Creating a new Sheet and retrying the request");
             create_new_sheet(spreadsheet_id, sheet_name, access_token);
-            upload_people_count_to_google_sheets(spreadsheet_id, data, sheet_name, access_token);
+            upload_people_count_to_google_sheets(spreadsheet_id, data, n_data, sheet_name, access_token);
         }
     }
     else
