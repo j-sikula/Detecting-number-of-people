@@ -1,6 +1,8 @@
 #ifndef AUTHENTICATION_H
 #define AUTHENTICATION_H
 
+#include <stdint.h>
+
 /**
  * @brief Create a signed JWT
  * @param client_email The client email
@@ -22,6 +24,6 @@ char *exchange_jwt_for_access_token(const char *jwt);
  */
 char *generate_access_token();
 
-void checkAccessTokenValidity(char* access_token);
+uint8_t checkAccessTokenValidity(char** access_token);
 
 #endif // AUTHENTICATION_H

@@ -153,16 +153,17 @@ char *generate_access_token()
     return access_token;
 }
 
-void checkAccessTokenValidity(char *access_token)
+uint8_t checkAccessTokenValidity(char **access_token)
 {
     if (time(NULL) - last_access_token_time < 3400)
     {
-        return;
+        return 1;
     }
-    if (access_token != NULL)
+    if (*access_token != NULL)
     {
-        free(access_token);
-        access_token = NULL;
+        free(*access_token);
+       *access_token = NULL;
     }
-    access_token = generate_access_token();
+    *access_token = generate_access_token();
+    return 0;
 }

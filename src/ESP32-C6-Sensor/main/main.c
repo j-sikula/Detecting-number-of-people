@@ -29,6 +29,9 @@
 
 #include "esp_heap_caps.h"
 
+
+#define MIN_GOOGLE_SHEETS_UPDATE_PERIOD 10000 // 10 seconds
+
 static char *google_api_access_token = NULL;
 
 static QueueHandle_t data_to_sd_queue;
@@ -110,11 +113,15 @@ void vWifiTask()
 
 			if (uxQueueMessagesWaiting(data_to_google_sheets_queue) >= 1)
 			{
-				vTaskDelay(2000 / portTICK_PERIOD_MS); // wait for other possible data
+				vTaskDelay(MIN_GOOGLE_SHEETS_UPDATE_PERIOD / portTICK_PERIOD_MS); // wait for other possible data
 
 				uint8_t n_data = uxQueueMessagesWaiting(data_to_google_sheets_queue);
 				ESP_LOGI("vWifiTask", "Received data from queue");
-				checkAccessTokenValidity(google_api_access_token);
+				
+				if(checkAccessTokenValidity(&google_api_access_token) == 0)
+				{
+					ESP_LOGI("vWifiTask", "acces token before expiration, generated new one, %s", google_api_access_token);
+				}
 				char *date = get_current_week();
 				people_count_t *data[n_data];
 
