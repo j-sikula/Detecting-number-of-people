@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:sensor_gui/control/data_decoder.dart';
 
-import 'control/serial_port_handler.dart';
+import '../control/serial_port_handler.dart';
 
 class SensorDataVisualiser extends StatefulWidget {
   final SerialPortHandler? serialPortHandler;

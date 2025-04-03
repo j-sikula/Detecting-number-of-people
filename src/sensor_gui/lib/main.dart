@@ -27,7 +27,7 @@ SOFTWARE.
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:sensor_gui/serial_port_selector.dart';
+import 'package:sensor_gui/navigation_main_screen.dart';
 import 'package:window_size/window_size.dart';
 
 void main() {
@@ -46,7 +46,7 @@ class ExampleApp extends StatefulWidget {
 }
 
 class ExampleAppState extends State<ExampleApp> {
-  var availablePorts = [];
+  int currentPageIndex = 0; // Default page index
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -58,20 +58,11 @@ class ExampleAppState extends State<ExampleApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        theme: ThemeData.light(), // Light theme
-        darkTheme: ThemeData.dark(), // Dark theme
-        themeMode: ThemeMode.system, // Use system theme mode
+      theme: ThemeData.light(), // Light theme
+      darkTheme: ThemeData.dark(), // Dark theme
+      themeMode: ThemeMode.system, // Use system theme mode
 
-        home: Scaffold(
-          appBar: AppBar(
-            title: const Text('People counter'),
-          ),
-          body: const SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: SizedBox(
-                width: 400,
-                child: SerialPortSelector(),
-              )),
-        ));
+      home: const NavigationMainScreen(),
+    );
   }
 }
