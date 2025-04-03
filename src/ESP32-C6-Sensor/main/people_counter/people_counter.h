@@ -15,8 +15,8 @@
 #define NOT_ENTERED 255
 #define TRANSPOSE_MATRIX // transpose matrix if the sensor is rotated 90 degrees
 
-#define ENTER_POSITION 0
-#define EXIT_POSITION N_ZONES - 1
+#define ENTER_POSITION N_ZONES - 1
+#define EXIT_POSITION 0
 
 
 typedef struct

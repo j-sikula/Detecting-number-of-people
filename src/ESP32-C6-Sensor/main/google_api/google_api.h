@@ -11,8 +11,8 @@
 #define SPREADSHEET_ID "1SMUomRFOupgDCK7eLoi8eb6Y_97LJ3NA8j68mztiyTw"
                         //header+(braces+timestamp+distance*n_zones)*loop_count 
 #define JSON_APPEND_LENGTH (62+(3+26+7*VL53L7CX_RESOLUTION_8X8)*MEASUREMENT_LOOP_COUNT)
-#define PEOPLE_COUNT_STR_LENGTH 31
-#define JSON_UPLOAD_PEOPLE_COUNT_LENGTH (62+PEOPLE_COUNT_STR_LENGTH+15)
+#define PEOPLE_COUNT_STR_LENGTH 34
+#define JSON_UPLOAD_PEOPLE_COUNT_LENGTH (62+45+PEOPLE_COUNT_STR_LENGTH) //header+spreadsheed ID+people_count
 
 
 // Number of retries for a failed request

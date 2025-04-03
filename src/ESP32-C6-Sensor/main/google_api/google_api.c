@@ -1,7 +1,6 @@
 #include "google_api.h"
-#include "keys.h"    //API_KEY
-#include "esp_mac.h" //needed for http
-#include "esp_wifi.h" //needed for esp_wifi_is_connected
+#include "keys.h"     //API_KEY
+#include "esp_mac.h"  //needed for http
 #include "esp_http_client.h"
 #include "lwip/sockets.h" //needed for http
 #include "esp_log.h"
@@ -204,7 +203,7 @@ void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, 
         // reset the counter when the request is successful
         n_request_repeated = 0;
     }
-    //free(data); //must be freed in the calling function due to recursion (request retries)
+    // free(data); //must be freed in the calling function due to recursion (request retries)
 }
 
 void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_count_t **data, uint8_t n_data, const char *sheet_name, const char *access_token)
@@ -212,17 +211,17 @@ void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_cou
     static uint8_t n_request_repeated = 0;
     char url[512];
     snprintf(url, sizeof(url), "https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s:append?valueInputOption=RAW", spreadsheet_id, sheet_name);
-    char *dataJSON = (char *)malloc((JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data-1)*PEOPLE_COUNT_STR_LENGTH) * sizeof(char));
+    char *dataJSON = (char *)malloc((JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data - 1) * PEOPLE_COUNT_STR_LENGTH) * sizeof(char));
 
     snprintf(dataJSON, JSON_UPLOAD_PEOPLE_COUNT_LENGTH * sizeof(char), "{\"range\":\"%s\",\"majorDimension\":\"ROWS\",\"values\":[[\"%s\",%d]", sheet_name, data[0]->timestamp, data[0]->people_count);
-    
-    for(uint8_t i = 1; i < n_data; i++)
+
+    for (uint8_t i = 1; i < n_data; i++)
     {
-        char row_buffer[PEOPLE_COUNT_STR_LENGTH];
+        char row_buffer[PEOPLE_COUNT_STR_LENGTH]; // example: ,["2025-03-28 10:09:44,283",12]
         snprintf(row_buffer, sizeof(row_buffer), ",[\"%s\",%d]", data[i]->timestamp, data[i]->people_count);
-        strncat(dataJSON, row_buffer, (JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data-1)*PEOPLE_COUNT_STR_LENGTH) * sizeof(char) - strlen(dataJSON) - 1);
+        strncat(dataJSON, row_buffer, (JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data - 1) * PEOPLE_COUNT_STR_LENGTH) * sizeof(char) - strlen(dataJSON) - 1);
     }
-    strncat(dataJSON, "]}", (JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data-1)*PEOPLE_COUNT_STR_LENGTH) * sizeof(char) - strlen(dataJSON) - 1);
+    strncat(dataJSON, "]}", (JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data - 1) * PEOPLE_COUNT_STR_LENGTH) * sizeof(char) - strlen(dataJSON) - 1);
     ESP_LOGI(TAG, "Data JSON: %s", dataJSON);
     uint8_t status_code = _send_api_request(url, HTTP_METHOD_POST, dataJSON, 3 * 1024, access_token);
 
@@ -359,8 +358,7 @@ uint16_t _send_api_request(const char *url, esp_http_client_method_t method, cha
         ESP_LOGE("API", "Failed to load JSON payload");
         return 400;
     }
-    
-    
+
     http_response_t response = {0};
 
     esp_http_client_config_t config = {

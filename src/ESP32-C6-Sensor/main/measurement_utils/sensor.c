@@ -3,6 +3,7 @@
 #include "measurement_utils/utils.h"
 #include "string.h"
 #include "people_counter/people_counter.h"
+#include "led_indicator/led_indicator.h"
 
 uint8_t is_measuring = 1;
 uint8_t status, loop, isAlive, isReady, i;
@@ -107,6 +108,8 @@ void startContinuousMeasurement(QueueHandle_t data_to_sd_queue, QueueHandle_t da
 {
 	status = vl53l7cx_start_ranging(&Dev);
 	uint16_t *background = NULL;
+	vTaskDelay(1000 / portTICK_PERIOD_MS);
+	single_blink(0, 0, 14, 2);
 	while (is_measuring)
 	{
 		loop = 0;
