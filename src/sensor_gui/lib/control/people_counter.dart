@@ -28,11 +28,11 @@ class PeopleCounter {
 
   List<int> processMeasurement(Measurement measurement) {
     // Checks size of the data
-    if (background.length != 64 && measurement.data.length != 64) {
+    if (background.length != 64 && measurement.depthData.length != 64) {
       return [];
     }
     List<int> heightData = List.generate(background.length,
-        (index) => background[index] - measurement.data[index]);
+        (index) => background[index] - measurement.depthData[index]);
 
     for (int i = 0; i < nZones; i++) {
       int nPixelsAboveThreshold = 0;
@@ -88,7 +88,7 @@ class PeopleCounter {
   }
 
   void setSurface(Measurement measurement) {
-    background = measurement.data;
+    background = measurement.depthData;
   }
 }
 

@@ -37,9 +37,9 @@ class SensorDataVisualiserState extends State<SensorDataVisualiser> {
       decodedDataSubscription =
           widget.serialPortHandler!.decodedDataStream!.listen((data) {
         if (data != null) {
-          if (data.data.length == 64) {
+          if (data.depthData.length == 64) {
             setState(() {
-              sensorData = data.data;
+              sensorData = data.depthData;
               sensorStatuses = data.statuses;
             });
           }
