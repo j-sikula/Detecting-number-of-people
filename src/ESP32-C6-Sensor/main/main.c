@@ -28,7 +28,7 @@
 #include "sd_card/sd_card.h"
 
 #include "esp_heap_caps.h"
-
+#include "esp_vfs_fat.h" // Include the header for file handling
 
 #define MIN_GOOGLE_SHEETS_UPDATE_PERIOD 10000 // 10 seconds
 
@@ -70,15 +70,32 @@ void app_main(void)
 
 void vTaskSDCard()
 {
+	char *date = get_current_date();
 	init_sd_card();
-
+	init_log_to_file(date);
+	uint8_t log_file_counter = 0;
 	while (true)
 	{
+		if (log_file_counter >= 10) // refresh log file every 2 minutes
+		{
+			log_file_counter = 0;
+			date = get_current_date();
+			if (refresh_log_file(date) == 0)
+			{
+				ESP_LOGE("vTaskSDCard", "Failed to refresh log file");
+			}
+			free(date);
+			ESP_LOGI("vTaskSDCard", "Log file refreshed");
+		} else
+		{
+			log_file_counter++;
+		}
+		
 		measurement_t *data;
 		if (xQueueReceive(data_to_sd_queue, &data, portMAX_DELAY) == pdPASS)
 		{
-			ESP_LOGI("vTaskSDCard", "Received data from queue");
-			char *date = get_current_date();
+			ESP_LOGD("vTaskSDCard", "Received data from queue");
+			date = get_current_date();
 			save_raw_data(date, data);
 			free(date);
 			check_heap_memory();

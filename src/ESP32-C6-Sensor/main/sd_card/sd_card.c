@@ -88,7 +88,7 @@ void save_raw_data(const char *filename, measurement_t *measurement)
     {
         strcat(filepath, ".csv");
     }
-    ESP_LOGI("SD Card", "Preparing saving raw data to %s", filepath);
+    ESP_LOGD("SD Card", "Preparing saving raw data to %s", filepath);
     FILE *f = fopen(filepath, "a");
     if (f == NULL)
     {

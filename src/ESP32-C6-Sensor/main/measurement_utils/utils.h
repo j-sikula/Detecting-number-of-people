@@ -4,8 +4,11 @@
 #include <stdint.h>
 #include "nvs_flash.h" //non volatile storage
 #include <esp_sntp.h>
+#include "esp_vfs_fat.h"
+#include <stdio.h>
 #include "measurement_utils/sensor.h"
 
+#define LOG_FILE_NAME "/sdcard/log.log"
 #define DATE_TIME_LENGTH 23 //for example 2025-02-13 12:23:26,874
 
 /**
@@ -51,5 +54,12 @@ void initialize_sntp(void);
 char *measurement_array_to_string(measurement_t *measurement);
 
 void check_heap_memory();
+
+void init_log_to_file(char *log_file_name);
+
+int custom_log_to_file(const char *fmt, va_list args);
+
+uint8_t refresh_log_file(char *log_file_name);
+uint8_t close_log_file(void);
 
 #endif // UTILS_H
