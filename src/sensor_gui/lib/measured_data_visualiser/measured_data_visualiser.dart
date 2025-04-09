@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sensor_gui/control/data_decoder.dart';
 import 'package:sensor_gui/measured_data_visualiser/grid_data_widget.dart';
@@ -21,6 +22,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
   List<Measurement> measurement = List.filled(1, defaultMeasurement);
   int indexOfMeasurement = 0; // Index of the measurement to be displayed
   bool showTargetStatuses = false; // Show target statuses
+  bool isFileLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +34,9 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
             Text(lblFileName),
             ElevatedButton(
               onPressed: onBtnOpenFilePressed,
-              child: const Text("Open File"),
+              child: isFileLoading
+                  ? const CircularProgressIndicator()
+                  : const Text("Open File"),
             ),
           ],
         ),
@@ -65,7 +69,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
             ),
           ],
         ),
-        Text(measurement[indexOfMeasurement].time.toString()),
+        SelectableText(measurement[indexOfMeasurement].time.toString()),
         Slider(
           value: indexOfMeasurement.toDouble(),
           onChanged: onSliderChanged,
@@ -114,12 +118,20 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
 
   /// Callback function to open file with raw data
   void onBtnOpenFilePressed() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    setState(() {
+        isFileLoading = true;
+      });
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
 
     if (result != null) {
       String path = result.files.single.path ?? "No path available";
       File rawDataFile = File(path);
-      List<Measurement> measurements = readMeasurementsFromFile(rawDataFile);
+      
+      log("Loading file started");
+      List<Measurement> measurements = await compute(readMeasurementsFromFile, rawDataFile);
+      setState(() {
+        isFileLoading = false;
+      });
       if (measurements.isEmpty) {
         log("No measurements found in the file");
         return;
@@ -147,5 +159,4 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
       }
     });
   }
-
 }

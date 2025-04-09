@@ -176,7 +176,7 @@ List<Measurement> readMeasurementsFromFile(File fileRawData) {
       try {
         List<String> parts = line.split(';');
         if (parts.length > 1) {
-          DateTime time = DateFormat("yyyy-MM-dd HH:mm:ss,SSS").parse(parts[0]);
+          DateTime time = DateFormat("yyyy-MM-dd HH:mm:ss,SSS").parse(parts[0], true).toLocal();    //converts UTC time in given format to Local time  
           List<int> depthData = parts.sublist(1, 65).map(int.parse).toList();
           List<int> statuses = parts.sublist(65).map(int.parse).toList();
           measurements.add(Measurement(depthData, time, statuses));
