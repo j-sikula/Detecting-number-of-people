@@ -5,6 +5,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sensor_gui/control/data_decoder.dart';
+import 'package:sensor_gui/control/people_detector.dart';
+import 'package:sensor_gui/measured_data_visualiser/grid_algorithm_data_widget.dart';
 import 'package:sensor_gui/measured_data_visualiser/grid_data_widget.dart';
 
 Measurement defaultMeasurement = Measurement(List<int>.filled(64, 0),
@@ -23,7 +25,11 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
   int indexOfMeasurement = 0; // Index of the measurement to be displayed
   bool showTargetStatuses = false; // Show target statuses
   bool isFileLoading = false;
-
+  PeopleDetector peopleDetector = PeopleDetector();
+  AlgorithmData dataAlgorithmGrid = AlgorithmData(
+    dataGrid: List<int>.filled(64, 0),
+    textToDisplay: "No data",
+  );
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -35,7 +41,13 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
             ElevatedButton(
               onPressed: onBtnOpenFilePressed,
               child: isFileLoading
-                  ? const CircularProgressIndicator()
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                      ),
+                    )
                   : const Text("Open File"),
             ),
           ],
@@ -76,7 +88,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
           min: 0,
           max: measurement.length.toDouble() - 1,
           divisions: measurement.length > 1 ? measurement.length - 1 : null,
-          label: "${indexOfMeasurement + 1} / ${measurement.length}",
+          //label: "${indexOfMeasurement + 1} / ${measurement.length}",
         ),
         Row(
           children: [
@@ -111,7 +123,8 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
                 },
                 child: const Text("+ 1 min")),
           ],
-        )
+        ),
+        GridAlgorithmDataWidget(data: dataAlgorithmGrid)
       ],
     );
   }
@@ -119,19 +132,18 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
   /// Callback function to open file with raw data
   void onBtnOpenFilePressed() async {
     setState(() {
-        isFileLoading = true;
-      });
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      isFileLoading = true;
+    });
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
 
     if (result != null) {
       String path = result.files.single.path ?? "No path available";
       File rawDataFile = File(path);
-      
+
       log("Loading file started");
-      List<Measurement> measurements = await compute(readMeasurementsFromFile, rawDataFile);
-      setState(() {
-        isFileLoading = false;
-      });
+      List<Measurement> measurements =
+          await compute(readMeasurementsFromFile, rawDataFile);
+
       if (measurements.isEmpty) {
         log("No measurements found in the file");
         return;
@@ -141,6 +153,9 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
         measurement = measurements;
       });
     }
+    setState(() {
+      isFileLoading = false;
+    });
   }
 
   void onSliderChanged(double value) {
@@ -152,6 +167,9 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
   void changeIndexOfMeasurement(int incrementVal) {
     setState(() {
       indexOfMeasurement += incrementVal;
+      dataAlgorithmGrid = peopleDetector.processFrame(
+          measurement[indexOfMeasurement]); // Process the current measurement
+      
       if (indexOfMeasurement < 0) {
         indexOfMeasurement = 0;
       } else if (indexOfMeasurement >= measurement.length) {

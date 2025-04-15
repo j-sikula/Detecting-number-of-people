@@ -1,3 +1,42 @@
+# Scenarios for measurement
+1. people exits/ enter 2x on the center of doors
+- 2 m distance
+- 1 m distance 
+- 0.5 m distance
+- next to the other
+
+2. from right corner to left corner
+- 2 m distance
+- 1 m distance 
+- 0.5 m distance
+- next to the other
+
+3. right side of the door
+- 2 m distance
+- 1 m distance 10:45:00 3times to the door 
+- 0.5 m distance  10:46:00
+
+4. left side of the door
+- 2 m distance
+- 1 m distance 
+- 0.5 m distance  10:48:50 end
+
+5. closing the door 10:50:50
+
+6. when opening door from indoor - immediately exit room without colsing door 10:51:44
+
+7. enter and close door,  6., 7. twice 10:54:30
+
+8. open exit close 10:55
+
+9. open enter and slowly closing the door 
+10. repaeating 8. 9. with closing door
+
+4. exiting/entring when door are not opened entirely twice
+
+
+
+
 | Supported Targets | ESP32 | ESP32-C2 | ESP32-C3 | ESP32-C6 | ESP32-H2 | ESP32-P4 | ESP32-S2 | ESP32-S3 |
 | ----------------- | ----- | -------- | -------- | -------- | -------- | -------- | -------- | -------- |
 
