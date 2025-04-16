@@ -167,14 +167,13 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
   void changeIndexOfMeasurement(int incrementVal) {
     setState(() {
       indexOfMeasurement += incrementVal;
-      dataAlgorithmGrid = peopleDetector.processFrame(
-          measurement[indexOfMeasurement]); // Process the current measurement
-      
       if (indexOfMeasurement < 0) {
         indexOfMeasurement = 0;
       } else if (indexOfMeasurement >= measurement.length) {
         indexOfMeasurement = measurement.length - 1;
       }
+      dataAlgorithmGrid = peopleDetector.processFrame(
+          measurement[indexOfMeasurement]); // Process the current measurement
     });
   }
 }
