@@ -152,7 +152,18 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
         lblFileName = path;
         measurement = measurements;
       });
+      for (var mes in measurement) {
+        peopleDetector.processFrame(mes); // Process all measurements
+      }
+
+      String? pathProcessedData = await FilePicker.platform.saveFile();
+      if (pathProcessedData != null) {
+       peopleDetector
+          .savePeopleCountHistory(pathProcessedData);       
+      }
+      
     }
+
     setState(() {
       isFileLoading = false;
     });

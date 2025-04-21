@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:sensor_gui/control/data_decoder.dart';
 import 'dart:math';
 import 'dart:developer' as dev;
 
-const MAX_MOVEMENT_LENGTH = 4; // Maximum length of the movement in pixxels
-const MIN_LOCAL_MINIMUMS_DISTANCE = 3;
+const MAX_MOVEMENT_LENGTH = 6.0; // Maximum length of the movement in pixxels
+const MIN_LOCAL_MINIMUMS_DISTANCE = 4.0;
 
 class PeopleDetector {
+  int peopleCount = 0; // Number of people in the room
+  List<PeopleCount> peopleCountHistory = []; // History of people count
   Measurement lastMeasurement = Measurement(
     List<int>.filled(64, 0),
     DateTime.now(),
@@ -15,11 +19,17 @@ class PeopleDetector {
   List<PersonMovement> peopleMovements = [];
   List<int> cumsum = List.filled(64, 0); // Cumulative sum of depth data
   List<int> detectionGrid = // Detection grid 5x5
-  [0,0,1,0,0,
-   0,2,2,2,0,
-   1,2,5,2,1,
-   0,2,2,2,0,
-   0,0,1,0,0]; 
+  /*[0,0,1,0,0,
+   0,2,3,2,0,
+   1,3,5,3,1,
+   0,2,3,2,0,
+   0,0,1,0,0]; */
+
+    [0,1,1,1,0,
+   1,2,2,2,1,
+   1,2,3,2,1,
+   1,2,2,2,1,
+   0,1,1,1,0];
 
   AlgorithmData processFrame(Measurement measurement) {
     List<int> depthData = List.from(measurement.depthData);
@@ -121,35 +131,49 @@ class PeopleDetector {
           // If no people are present, add the first person
           peopleMovements.add(PersonMovement(indexesOfPresentPeople[i]));
         } else {
-          bool newEntry = true; // Flag to check if a new entry is found
+          int indexOfMinDistance =
+              -1; // Index of the minimum distance, -1 if not found
+          double minDistance = MAX_MOVEMENT_LENGTH; // Minimum distance
 
+          // Find the closest las person position to the edge of the grid
           for (int j = 0; j < peopleMovements.length; j++) {
-            // Person is close to the edge of the grid
-            if (getDistance(peopleMovements[j].currentPosition, indexesOfPresentPeople[i]) < MAX_MOVEMENT_LENGTH) {
-              newEntry = false;
-              if (isBorderIndex(peopleMovements[j].currentPosition)) {
-                // Person stays in the border
-                peopleMovements[j].currentPosition = indexesOfPresentPeople[i];
-                } else {
-                // Person moved through the entire grid
-                if (isExitBorderIndex(peopleMovements[j].startPosition) !=
-                   isExitBorderIndex(indexesOfPresentPeople[i] % 8)) {
-                  
-                  if (peopleMovements[j].startedExiting) {
-                    dev.log("Person exited ${lastMeasurement.time}");
-                  } else {
-                    dev.log("Person entered ${lastMeasurement.time}");
-                  }
-                  peopleMovements.removeAt(j);
-                }
-                
-                
-              }
-              break; // Exit the loop if the person movement is found
+            double distance = getDistance(
+                peopleMovements[j].currentPosition,
+                indexesOfPresentPeople[
+                    i]); // Distance between the last person position and the grid edge
+            if (distance < minDistance) {
+              minDistance = distance;
+              indexOfMinDistance = j;
             }
           }
-
-          if (newEntry) {
+          // Person is close to the edge of the grid
+          if (minDistance < MAX_MOVEMENT_LENGTH) {
+            if (isBorderIndex(peopleMovements[indexOfMinDistance].currentPosition) && (isExitBorderIndex(indexesOfPresentPeople[i]) == isExitBorderIndex(peopleMovements[indexOfMinDistance].currentPosition))) {
+              // Person stays in the border
+              peopleMovements[indexOfMinDistance]
+                  .updatePosition(indexesOfPresentPeople[i]);
+            } else {
+              // Person moved through the entire grid
+              if (isExitBorderIndex(
+                      peopleMovements[indexOfMinDistance].startPosition) !=
+                  isExitBorderIndex(indexesOfPresentPeople[i] % 8)) {
+                if (peopleMovements[indexOfMinDistance].startedExiting) {
+                  dev.log("Person exited ${lastMeasurement.time}");
+                  peopleCount--;
+                  peopleCountHistory
+                      .add(PeopleCount(peopleCount, lastMeasurement.time));
+                } else {
+                  dev.log("Person entered ${lastMeasurement.time}");
+                  peopleCount++;
+                  peopleCountHistory
+                      .add(PeopleCount(peopleCount, lastMeasurement.time));
+                }
+                peopleMovements[indexOfMinDistance] = PersonMovement(
+                    indexesOfPresentPeople[
+                        i]); // After finishing the movement, create a new movement for case it returns back immediately
+              }
+            }
+          } else {
             // If presence on the boreder is not recognized as movement from previous actions, create new entry
             peopleMovements.add(PersonMovement(indexesOfPresentPeople[i]));
           }
@@ -159,16 +183,35 @@ class PeopleDetector {
           dev.log("Appeared without entering the grid from the edge");
           break;
         } else {
+          int indexOfMinDistance =
+              -1; // Index of the minimum distance, -1 if not found
+          double minDistance = MAX_MOVEMENT_LENGTH; // Minimum distance
+
+          // Find the closest las person position to the edge of the grid
           for (int j = 0; j < peopleMovements.length; j++) {
-            if (getDistance(peopleMovements[j].currentPosition,
-                    indexesOfPresentPeople[i]) <
-                MAX_MOVEMENT_LENGTH) {
-              peopleMovements[j].currentPosition =
-                  indexesOfPresentPeople[i]; // Update the current position
-              break;
+            double distance = getDistance(
+                peopleMovements[j].currentPosition,
+                indexesOfPresentPeople[
+                    i]); // Distance between the last person position and the grid edge
+            if (distance < minDistance) {
+              minDistance = distance;
+              indexOfMinDistance = j;
             }
           }
+          if (minDistance < MAX_MOVEMENT_LENGTH) {
+            peopleMovements[indexOfMinDistance].updatePosition(
+                indexesOfPresentPeople[i]); // Update the current position
+          }
         }
+      }
+    }
+    for (PersonMovement person in List.from(peopleMovements)) {
+      if (person.updatedPosition) {
+        // If the position is updated, reset the flag
+        person.updatedPosition = false;
+      } else {
+        // If the position is not updated, remove the person from the list
+        peopleMovements.remove(person);
       }
     }
 
@@ -189,7 +232,8 @@ class PeopleDetector {
   }
 
   bool isExitBorderIndex(int index) {
-    return index % 8 <= 3; // Check if the index is on the left border of the grid
+    return index % 8 <=
+        3; // Check if the index is on the left border of the grid
   }
 
   /// Calculates the distance between two indexes in the grid.
@@ -253,6 +297,30 @@ class PeopleDetector {
     }
     return squareMatrix;
   }
+
+  void savePeopleCountHistory(String path) async {
+    if (path.contains('.') == false) {
+      // Checks if the path contains the file extension
+      path = '$path.csv'; // Adds the file extension csv if not present
+    }
+
+    final file = File(path);
+    try {
+      final sink = file.openWrite();
+      sink.write('Time;People Count\n');
+
+      // Write the data to the file
+      for (var count in peopleCountHistory) {
+        sink.write('${count.time.toIso8601String()};${count.peopleCount}\n');
+      }
+      await sink.flush();
+      await sink.close();
+
+      dev.log('Data saved to file successfully');
+    } catch (e) {
+      dev.log('Failed to save data to file: $e');
+    }
+  }
 }
 
 class AlgorithmData {
@@ -272,11 +340,27 @@ class PersonMovement {
   int startPosition; // index of the start position
   int currentPosition; // index of the current position
   bool startedExiting;
-  PersonMovement(this.startPosition) 
+  bool updatedPosition = true; // Flag to check if the position is updated
+  PersonMovement(this.startPosition)
       : currentPosition = startPosition,
-        startedExiting = startPosition % 8 <= 3; // Person starts exiting the grid
+        startedExiting =
+            startPosition % 8 <= 3; // Person starts exiting the grid
 
   int getColumn() {
     return currentPosition % 8; // Column index
   }
+
+  void updatePosition(int newPosition) {
+    currentPosition = newPosition; // Update the current position
+    updatedPosition = true; // Set the flag to true
+  }
+}
+
+class PeopleCount {
+  /// Number of people in the grid
+  int peopleCount = 0;
+
+  /// Time of the change of the count
+  DateTime time;
+  PeopleCount(this.peopleCount, this.time);
 }
