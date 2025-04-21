@@ -5,8 +5,9 @@ import 'package:sensor_gui/control/data_decoder.dart';
 import 'dart:math';
 import 'dart:developer' as dev;
 
-const MAX_MOVEMENT_LENGTH = 6.0; // Maximum length of the movement in pixxels
+const MAX_MOVEMENT_LENGTH = 5.0; // Maximum length of the movement in pixxels
 const MIN_LOCAL_MINIMUMS_DISTANCE = 4.0;
+const depthThreshold = 1300; // Threshold for depth data to consider a person present
 
 class PeopleDetector {
   int peopleCount = 0; // Number of people in the room
@@ -17,23 +18,23 @@ class PeopleDetector {
     List<int>.filled(64, 0),
   ); // Default measurement
   List<PersonMovement> peopleMovements = [];
+  List<int> weightedData = List.filled(64, 0); // Weighted data
   List<int> cumsum = List.filled(64, 0); // Cumulative sum of depth data
-  List<int> detectionGrid = // Detection grid 5x5
-  /*[0,0,1,0,0,
+  List<int> detectionGrid =// List.filled(25, 1); // Detection grid 5x5
+      /*    [0,0,1,0,0,
    0,2,3,2,0,
    1,3,5,3,1,
    0,2,3,2,0,
    0,0,1,0,0]; */
 
-    [0,1,1,1,0,
+    [1,1,1,1,1,
    1,2,2,2,1,
-   1,2,3,2,1,
    1,2,2,2,1,
-   0,1,1,1,0];
+   1,2,2,2,1,
+   1,1,1,1,1];
 
   AlgorithmData processFrame(Measurement measurement) {
     List<int> depthData = List.from(measurement.depthData);
-    List<int> weightedData = List.filled(64, 0);
     for (int i = 0; i < depthData.length; i++) {
       if (measurement.statuses[i] == 255) {
         // If target not detected, set depth data to background (2100 mm)
@@ -69,23 +70,24 @@ class PeopleDetector {
     // find index of the minimum of weightedData
     int minValue = 0;
 
+    // finding for optimizing performance
     for (int i = 1; i < weightedData.length; i++) {
       if (weightedData[i] < weightedData[minValue]) {
         minValue = i;
       }
     }
-    if (weightedData[minValue] < 1000) {
+    if (weightedData[minValue] < depthThreshold) {
       localMinimums = findAllLocalMinimums(weightedData);
     }
 
     for (int i = 0; i < localMinimums.length; i++) {
-      if (weightedData[localMinimums[i]] > 1000) {
+      if (weightedData[localMinimums[i]] > depthThreshold) {
         localMinimums
             .removeAt(i); // Remove the local minimums that are below threshold
         i--;
       }
     }
-
+/*
     List<int> locationOfPresentPeople =
         []; // List to store indexes of present people
     List<bool> isPresent = List.filled(
@@ -112,99 +114,115 @@ class PeopleDetector {
         toReturn
             .highlightData(localMinimums[i]); // Highlight the local minimums
       }
-    }
+    }*/
 
-    countPeople(locationOfPresentPeople); // Count people in the grid
+    List<int> highlight =
+        countPeople(localMinimums); // Count people in the grid
+    for (int i in highlight) {
+      toReturn.highlightData(i); // Highlight the local minimums
+    }
     return toReturn;
   }
 
-  void countPeople(List<int> indexesOfPresentPeople) {
-    if (indexesOfPresentPeople.isEmpty) {
+  List<int> countPeople(List<int> indexesOfLocalMinimums) {
+    if (indexesOfLocalMinimums.isEmpty) {
       // No people present, clear the list
       peopleMovements.clear();
-      return;
+      return [];
     }
-    for (int i = 0; i < indexesOfPresentPeople.length; i++) {
+
+    // Remove multiple people movements in the same position
+    for (int i = 0; i < peopleMovements.length; i++) {
+      for (int j = i + 1; j < peopleMovements.length; j++) {
+        if (peopleMovements[i].currentPosition ==
+            peopleMovements[j].currentPosition && i!= j && peopleMovements[j].startedExiting == peopleMovements[i].startedExiting) {
+          peopleMovements.removeAt(j);
+          j--;
+        }
+      }
+    }
+
+    List<int> indexesOfPresentPeople =
+        []; // List to store indexes of present people
+
+    for (PersonMovement personMovement in peopleMovements) {
+      int destinationIndex = findLocalMinimum(personMovement.currentPosition);
+      // correct the destination index if a lower local minimum is found nearby
+      for (int i in indexesOfLocalMinimums) {
+        if (i == destinationIndex) {
+          // If the person is already present, skip
+          continue;
+        }
+        if (getDistance(i, personMovement.currentPosition) <
+            MAX_MOVEMENT_LENGTH) {
+              if (weightedData[i] < weightedData[destinationIndex]) {
+                destinationIndex = i; // Update the index of the local minimum
+              } 
+          
+        }
+      }
+      if (weightedData[destinationIndex] < depthThreshold) {
+        if (isBorderIndex(destinationIndex)) {
+          if (isExitBorderIndex(destinationIndex) ==
+              isExitBorderIndex(personMovement.startPosition)) {
+            // Person exits where entered
+            personMovement.updatePosition(
+                destinationIndex); // Update the current position
+            personMovement.startPosition =
+                destinationIndex; // Update the start position
+          } else {
+            if (personMovement.startedExiting) {
+              dev.log("Person exited ${lastMeasurement.time}");
+              peopleCount--;
+              peopleCountHistory
+                  .add(PeopleCount(peopleCount, lastMeasurement.time));
+            } else {
+              dev.log("Person entered ${lastMeasurement.time}");
+              peopleCount++;
+              peopleCountHistory
+                  .add(PeopleCount(peopleCount, lastMeasurement.time));
+            }
+            personMovement = PersonMovement(
+                destinationIndex); // After finishing the movement, create a new movement for case it returns back immediately
+          }
+        } else {
+          personMovement
+              .updatePosition(destinationIndex); // Update the current position
+        }
+
+        indexesOfPresentPeople.add(destinationIndex);
+      }
+    }
+
+    for (int i = 0; i < indexesOfLocalMinimums.length; i++) {
       // person on the edge of the grid
-      if (isBorderIndex(indexesOfPresentPeople[i])) {
+      if (isBorderIndex(indexesOfLocalMinimums[i])) {
         if (peopleMovements.isEmpty) {
           // If no people are present, add the first person
-          peopleMovements.add(PersonMovement(indexesOfPresentPeople[i]));
+          peopleMovements.add(PersonMovement(indexesOfLocalMinimums[i]));
+          indexesOfPresentPeople.add(
+              indexesOfLocalMinimums[i]); // Add the index of the local minimum
         } else {
-          int indexOfMinDistance =
-              -1; // Index of the minimum distance, -1 if not found
-          double minDistance = MAX_MOVEMENT_LENGTH; // Minimum distance
-
-          // Find the closest las person position to the edge of the grid
-          for (int j = 0; j < peopleMovements.length; j++) {
-            double distance = getDistance(
-                peopleMovements[j].currentPosition,
-                indexesOfPresentPeople[
-                    i]); // Distance between the last person position and the grid edge
-            if (distance < minDistance) {
-              minDistance = distance;
-              indexOfMinDistance = j;
-            }
-          }
-          // Person is close to the edge of the grid
-          if (minDistance < MAX_MOVEMENT_LENGTH) {
-            if (isBorderIndex(peopleMovements[indexOfMinDistance].currentPosition) && (isExitBorderIndex(indexesOfPresentPeople[i]) == isExitBorderIndex(peopleMovements[indexOfMinDistance].currentPosition))) {
-              // Person stays in the border
-              peopleMovements[indexOfMinDistance]
-                  .updatePosition(indexesOfPresentPeople[i]);
-            } else {
-              // Person moved through the entire grid
-              if (isExitBorderIndex(
-                      peopleMovements[indexOfMinDistance].startPosition) !=
-                  isExitBorderIndex(indexesOfPresentPeople[i] % 8)) {
-                if (peopleMovements[indexOfMinDistance].startedExiting) {
-                  dev.log("Person exited ${lastMeasurement.time}");
-                  peopleCount--;
-                  peopleCountHistory
-                      .add(PeopleCount(peopleCount, lastMeasurement.time));
-                } else {
-                  dev.log("Person entered ${lastMeasurement.time}");
-                  peopleCount++;
-                  peopleCountHistory
-                      .add(PeopleCount(peopleCount, lastMeasurement.time));
-                }
-                peopleMovements[indexOfMinDistance] = PersonMovement(
-                    indexesOfPresentPeople[
-                        i]); // After finishing the movement, create a new movement for case it returns back immediately
-              }
-            }
+          if (indexesOfPresentPeople.contains(indexesOfLocalMinimums[i])) {
+            // If the person is already present, skip
+            continue;
           } else {
-            // If presence on the boreder is not recognized as movement from previous actions, create new entry
-            peopleMovements.add(PersonMovement(indexesOfPresentPeople[i]));
-          }
-        }
-      } else {
-        if (peopleMovements.isEmpty) {
-          dev.log("Appeared without entering the grid from the edge");
-          break;
-        } else {
-          int indexOfMinDistance =
-              -1; // Index of the minimum distance, -1 if not found
-          double minDistance = MAX_MOVEMENT_LENGTH; // Minimum distance
-
-          // Find the closest las person position to the edge of the grid
-          for (int j = 0; j < peopleMovements.length; j++) {
-            double distance = getDistance(
-                peopleMovements[j].currentPosition,
-                indexesOfPresentPeople[
-                    i]); // Distance between the last person position and the grid edge
-            if (distance < minDistance) {
-              minDistance = distance;
-              indexOfMinDistance = j;
+            // If the person is not present in PersonMovement, add the new person
+            double minDistance = 8;
+            for (int j = 0; j < peopleMovements.length; j++) {
+              minDistance = getDistance(peopleMovements[j].currentPosition,
+                  indexesOfLocalMinimums[i]);
             }
-          }
-          if (minDistance < MAX_MOVEMENT_LENGTH) {
-            peopleMovements[indexOfMinDistance].updatePosition(
-                indexesOfPresentPeople[i]); // Update the current position
+            if (minDistance >= MIN_LOCAL_MINIMUMS_DISTANCE) {
+              peopleMovements.add(PersonMovement(indexesOfLocalMinimums[i]));
+              indexesOfPresentPeople.add(indexesOfLocalMinimums[
+                  i]); // Add the index of the local minimum
+            }
           }
         }
       }
     }
+
     for (PersonMovement person in List.from(peopleMovements)) {
       if (person.updatedPosition) {
         // If the position is updated, reset the flag
@@ -215,20 +233,21 @@ class PeopleDetector {
       }
     }
 
-    return;
+    return indexesOfPresentPeople;
   }
 
   /// Checks if the index is on the border of the grid, where the person can enter or exit.
   bool isBorderIndex(int index) {
     int x = index % 8; // Column index
     int y = index ~/ 8; // Row index
-    // Check if the index is on the border of the grid
+    /*// Check if the index is on the border of the grid
     return x != 3 &&
         x != 4 &&
         (x == 0 ||
             x == 7 ||
             y == 0 ||
-            y == 7); // 0-7 are the indexes of the grid
+            y == 7); // 0-7 are the indexes of the grid*/
+    return index % 8 < 2 || index % 8 > 5 || ((x == 2 || x == 5) && (y == 0 || y == 7)); 
   }
 
   bool isExitBorderIndex(int index) {
@@ -243,6 +262,42 @@ class PeopleDetector {
     int x2 = index2 % 8;
     int y2 = index2 ~/ 8;
     return sqrt(pow((x1 - x2), 2) + pow((y1 - y2), 2)); // Euclidean distance
+  }
+
+  /// Finds the index of the local minimum in the weightedData List concerned as a 8x8 grid
+  /// Algorithm: gradient descent
+  int findLocalMinimum(int startIndex) {
+    bool localMinimumFound = false; // Flag to check if local minimum is found
+    while (!localMinimumFound) {
+      int indexX = startIndex % 8; // Column index
+      int indexY = startIndex ~/ 8; // Row index
+      localMinimumFound = true; // Set the flag to true
+      int localMinimum = startIndex; // Local minimum value
+      for (int i = -1; i <= 1; i++) {
+        for (int j = -1; j <= 1; j++) {
+          if (i == 0 && j == 0) continue; // Skip the center element
+          int neighborX = indexX + j;
+          int neighborY = indexY + i;
+          if (neighborX >= 0 &&
+              neighborX < 8 &&
+              neighborY >= 0 &&
+              neighborY < 8) {
+            int neighborIndex = neighborY * 8 + neighborX;
+            if (weightedData[neighborIndex] < weightedData[localMinimum]) {
+              localMinimum =
+                  neighborIndex; // Update the index of the probable local minimum
+              localMinimumFound =
+                  false; // Set the flag to false, found lower value
+            }
+          }
+        }
+      }
+      if (!localMinimumFound) {
+        startIndex =
+            localMinimum; // Update the start index to the new local minimum
+      }
+    }
+    return startIndex; // Return the index of the local minimum
   }
 
   /// Finds local minimums in the data grid 8x8.
@@ -315,6 +370,7 @@ class PeopleDetector {
       }
       await sink.flush();
       await sink.close();
+      peopleCountHistory.clear(); // Clear the history after saving
 
       dev.log('Data saved to file successfully');
     } catch (e) {
