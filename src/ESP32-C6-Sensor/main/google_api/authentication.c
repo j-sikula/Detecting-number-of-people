@@ -139,6 +139,7 @@ char *exchange_jwt_for_access_token(const char *jwt)
     }
 
     esp_http_client_cleanup(client);
+    free(post_data);
 
     return access_token;
 }
