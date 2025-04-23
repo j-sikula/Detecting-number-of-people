@@ -7,7 +7,8 @@ import 'dart:developer' as dev;
 
 const MAX_MOVEMENT_LENGTH = 4.3; // Maximum length of the movement in pixxels
 const MIN_LOCAL_MINIMUMS_DISTANCE = 4.0;
-const depthThreshold = 1300; // Threshold for depth data to consider a person present
+const depthThreshold =
+    1300; // Threshold for depth data to consider a person present
 
 class PeopleDetector {
   int peopleCount = 0; // Number of people in the room
@@ -20,7 +21,7 @@ class PeopleDetector {
   List<PersonMovement> peopleMovements = [];
   List<int> weightedData = List.filled(64, 0); // Weighted data
   List<int> cumsum = List.filled(64, 0); // Cumulative sum of depth data
-  final List<int> detectionGrid =// List.filled(25, 1); // Detection grid 5x5
+  final List<int> detectionGrid = // List.filled(25, 1); // Detection grid 5x5
       /*    [0,0,1,0,0,
    0,2,3,2,0,
    1,3,5,3,1,
@@ -33,8 +34,8 @@ class PeopleDetector {
    1,2,2,2,1,
    1,1,1,1,1];
 */
-[1,1,1,1,2,1,1,1,1];
-   int detectionGridSize = 3; // Size of the detection grid
+      [1, 1, 1, 1, 2, 1, 1, 1, 1];
+  int detectionGridSize = 3; // Size of the detection grid
 
   AlgorithmData processFrame(Measurement measurement) {
     List<int> depthData = List.from(measurement.depthData);
@@ -44,14 +45,41 @@ class PeopleDetector {
         depthData[i] = 2100;
       }
 
+      // eliminate the door
+      if ((i % 8 == 7 &&
+              depthData[i] <= 147 &&
+              depthData[i] >= 134 &&
+              measurement.depthData[(i + 32) % 64] <= 147 &&
+              measurement.depthData[(i + 32) % 64] >= 134) ||
+          (i % 8 == 6 &&
+              depthData[i] <= 215 &&
+              depthData[i] >= 190 &&
+              measurement.depthData[(i + 32) % 64] <= 215 &&
+              measurement.depthData[(i + 32) % 64] >= 190) ||
+          (i % 8 == 5 &&
+              depthData[i] <= 340 &&
+              depthData[i] >= 280 &&
+              measurement.depthData[(i + 32) % 64] <= 340 &&
+              measurement.depthData[(i + 32) % 64] >= 280)) {
+        depthData[i] = 2100; // Set the depth data to background (2100 mm)
+      }
+    }
+    for (int i = 0; i < depthData.length; i++) {
       int nWeightedCells = 0; // Number of weighted cells
       for (int j = 0; j < detectionGrid.length; j++) {
         int index = i +
             (8 * (j ~/ detectionGridSize) +
                 j % detectionGridSize -
-                (detectionGridSize-1)~/2*9); // Calculate the index for the depth data grid
+                (detectionGridSize - 1) ~/
+                    2 *
+                    9); // Calculate the index for the depth data grid
         // Check if the index is within bounds and in the same row (overflow is handled)
-        if (index >= 0 && index < 64 && index ~/ 8 == i ~/ 8 - (detectionGridSize-1)~/2 + j ~/ detectionGridSize) {
+        if (index >= 0 &&
+            index < 64 &&
+            index ~/ 8 ==
+                i ~/ 8 -
+                    (detectionGridSize - 1) ~/ 2 +
+                    j ~/ detectionGridSize) {
           weightedData[i] += depthData[index] * detectionGrid[j];
           nWeightedCells++;
         }
@@ -138,7 +166,10 @@ class PeopleDetector {
     for (int i = 0; i < peopleMovements.length; i++) {
       for (int j = i + 1; j < peopleMovements.length; j++) {
         if (peopleMovements[i].currentPosition ==
-            peopleMovements[j].currentPosition && i!= j && peopleMovements[j].startedExiting == peopleMovements[i].startedExiting) {
+                peopleMovements[j].currentPosition &&
+            i != j &&
+            peopleMovements[j].startedExiting ==
+                peopleMovements[i].startedExiting) {
           peopleMovements.removeAt(j);
           j--;
         }
@@ -158,10 +189,9 @@ class PeopleDetector {
         }
         if (getDistance(i, personMovement.currentPosition) <
             MAX_MOVEMENT_LENGTH) {
-              if (weightedData[i] < weightedData[destinationIndex]) {
-                destinationIndex = i; // Update the index of the local minimum
-              } 
-          
+          if (weightedData[i] < weightedData[destinationIndex]) {
+            destinationIndex = i; // Update the index of the local minimum
+          }
         }
       }
       if (weightedData[destinationIndex] < depthThreshold) {
@@ -174,14 +204,14 @@ class PeopleDetector {
             personMovement.startPosition =
                 destinationIndex; // Update the start position
           } else {
-            if (peopleCountHistory.isEmpty || peopleCountHistory.last.time != lastMeasurement.time) { 
+            if (peopleCountHistory.isEmpty ||
+                peopleCountHistory.last.time != lastMeasurement.time) {
               if (personMovement.startedExiting) {
                 dev.log("Person exited ${lastMeasurement.time}");
                 peopleCount--;
                 peopleCountHistory
                     .add(PeopleCount(peopleCount, lastMeasurement.time));
               } else {
-                
                 dev.log("Person entered ${lastMeasurement.time}");
                 peopleCount++;
                 peopleCountHistory
@@ -253,7 +283,9 @@ class PeopleDetector {
             x == 7 ||
             y == 0 ||
             y == 7); // 0-7 are the indexes of the grid*/
-    return index % 8 < 2 || index % 8 > 5 || ((x == 2 || x == 5) && (y == 0 || y == 7)); 
+    return index % 8 < 2 ||
+        index % 8 > 5 ||
+        ((x == 2 || x == 5) && (y == 0 || y == 7));
   }
 
   bool isExitBorderIndex(int index) {
