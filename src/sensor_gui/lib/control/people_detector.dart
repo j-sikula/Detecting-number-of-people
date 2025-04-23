@@ -5,7 +5,7 @@ import 'package:sensor_gui/control/data_decoder.dart';
 import 'dart:math';
 import 'dart:developer' as dev;
 
-const MAX_MOVEMENT_LENGTH = 5.0; // Maximum length of the movement in pixxels
+const MAX_MOVEMENT_LENGTH = 4.3; // Maximum length of the movement in pixxels
 const MIN_LOCAL_MINIMUMS_DISTANCE = 4.0;
 const depthThreshold = 1300; // Threshold for depth data to consider a person present
 
@@ -20,18 +20,21 @@ class PeopleDetector {
   List<PersonMovement> peopleMovements = [];
   List<int> weightedData = List.filled(64, 0); // Weighted data
   List<int> cumsum = List.filled(64, 0); // Cumulative sum of depth data
-  List<int> detectionGrid =// List.filled(25, 1); // Detection grid 5x5
+  final List<int> detectionGrid =// List.filled(25, 1); // Detection grid 5x5
       /*    [0,0,1,0,0,
    0,2,3,2,0,
    1,3,5,3,1,
    0,2,3,2,0,
-   0,0,1,0,0]; */
+   0,0,1,0,0]; 
 
     [1,1,1,1,1,
    1,2,2,2,1,
    1,2,2,2,1,
    1,2,2,2,1,
    1,1,1,1,1];
+*/
+[1,1,1,1,2,1,1,1,1];
+   int detectionGridSize = 3; // Size of the detection grid
 
   AlgorithmData processFrame(Measurement measurement) {
     List<int> depthData = List.from(measurement.depthData);
@@ -44,11 +47,11 @@ class PeopleDetector {
       int nWeightedCells = 0; // Number of weighted cells
       for (int j = 0; j < detectionGrid.length; j++) {
         int index = i +
-            (8 * (j ~/ 5) +
-                j % 5 -
-                18); // Calculate the index for the depth data grid
+            (8 * (j ~/ detectionGridSize) +
+                j % detectionGridSize -
+                (detectionGridSize-1)~/2*9); // Calculate the index for the depth data grid
         // Check if the index is within bounds and in the same row (overflow is handled)
-        if (index >= 0 && index < 64 && index ~/ 8 == i ~/ 8 - 2 + j ~/ 5) {
+        if (index >= 0 && index < 64 && index ~/ 8 == i ~/ 8 - (detectionGridSize-1)~/2 + j ~/ detectionGridSize) {
           weightedData[i] += depthData[index] * detectionGrid[j];
           nWeightedCells++;
         }
@@ -171,16 +174,19 @@ class PeopleDetector {
             personMovement.startPosition =
                 destinationIndex; // Update the start position
           } else {
-            if (personMovement.startedExiting) {
-              dev.log("Person exited ${lastMeasurement.time}");
-              peopleCount--;
-              peopleCountHistory
-                  .add(PeopleCount(peopleCount, lastMeasurement.time));
-            } else {
-              dev.log("Person entered ${lastMeasurement.time}");
-              peopleCount++;
-              peopleCountHistory
-                  .add(PeopleCount(peopleCount, lastMeasurement.time));
+            if (peopleCountHistory.isEmpty || peopleCountHistory.last.time != lastMeasurement.time) { 
+              if (personMovement.startedExiting) {
+                dev.log("Person exited ${lastMeasurement.time}");
+                peopleCount--;
+                peopleCountHistory
+                    .add(PeopleCount(peopleCount, lastMeasurement.time));
+              } else {
+                
+                dev.log("Person entered ${lastMeasurement.time}");
+                peopleCount++;
+                peopleCountHistory
+                    .add(PeopleCount(peopleCount, lastMeasurement.time));
+              }
             }
             personMovement = PersonMovement(
                 destinationIndex); // After finishing the movement, create a new movement for case it returns back immediately
