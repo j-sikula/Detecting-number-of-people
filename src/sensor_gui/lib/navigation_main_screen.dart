@@ -53,7 +53,7 @@ class _NavigationMainScreenState extends State<NavigationMainScreen> {
                   width: 10,
                 ),
                 const SensorDataVisualiserScreen(),
-                const MeasuredDataVisualiserScreen(),
+                SizedBox(width: constraints.maxWidth - 120, child: const MeasuredDataVisualiserScreen()),
               ][currentPageIndex],
             ],
           ),

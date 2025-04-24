@@ -8,7 +8,7 @@ import 'dart:developer' as dev;
 const MAX_MOVEMENT_LENGTH = 4.3; // Maximum length of the movement in pixxels
 const MIN_LOCAL_MINIMUMS_DISTANCE = 4.0;
 const depthThreshold =
-    1380; // Threshold for depth data to consider a person present
+    1390; // Threshold for depth data to consider a person present
 
 class PeopleDetector {
   int peopleCount = 0; // Number of people in the room
@@ -128,7 +128,7 @@ class PeopleDetector {
   }
 
   List<int> countPeople(List<int> indexesOfLocalMinimums) {
-    if (indexesOfLocalMinimums.isEmpty) {
+    if (indexesOfLocalMinimums.isEmpty && peopleMovements.isNotEmpty && peopleMovements[0].deleteMovement) {
       // No people present, clear the list
       peopleMovements.clear();
       return [];
@@ -153,7 +153,12 @@ class PeopleDetector {
 
     for (int i = 0; i < peopleMovements.length; i++) {	
       int destinationIndex = findLocalMinimum(peopleMovements[i].currentPosition);
-     
+      if (getDistance(destinationIndex, peopleMovements[i].currentPosition) >
+          MAX_MOVEMENT_LENGTH) {
+        // If the distance is too big, remove the person from the list
+        destinationIndex = peopleMovements[i].currentPosition;
+        dev.log("Overflowing distance, banned", level: 2);
+      }
       if (weightedData[destinationIndex] < depthThreshold) {
         if (isBorderIndex(destinationIndex)) {
           if (isExitBorderIndex(destinationIndex) ==
@@ -226,8 +231,14 @@ class PeopleDetector {
         // If the position is updated, reset the flag
         person.updatedPosition = false;
       } else {
-        // If the position is not updated, remove the person from the list
-        peopleMovements.remove(person);
+        // If the position is not updated twice, remove the person from the list
+        if (person.deleteMovement) {
+          // If the measurement should be deleted, remove the person from the list
+          peopleMovements.remove(person);
+        } else {
+          // If the measurement should not be deleted, set the flag to true
+          person.deleteMovement = true;
+        }
       }
     }
 
@@ -404,6 +415,7 @@ class PersonMovement {
   int currentPosition; // index of the current position
   bool startedExiting;
   bool updatedPosition = true; // Flag to check if the position is updated
+  bool deleteMovement = false; // Flag to check if the measurement should be deleted in next frame
   PersonMovement(this.startPosition)
       : currentPosition = startPosition,
         startedExiting =
@@ -416,6 +428,7 @@ class PersonMovement {
   void updatePosition(int newPosition) {
     currentPosition = newPosition; // Update the current position
     updatedPosition = true; // Set the flag to true
+    deleteMovement = false; // Reset the delete movement flag
   }
 }
 

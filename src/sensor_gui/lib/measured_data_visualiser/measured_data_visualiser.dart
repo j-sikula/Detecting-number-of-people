@@ -8,6 +8,7 @@ import 'package:sensor_gui/control/data_decoder.dart';
 import 'package:sensor_gui/control/people_detector.dart';
 import 'package:sensor_gui/measured_data_visualiser/grid_algorithm_data_widget.dart';
 import 'package:sensor_gui/measured_data_visualiser/grid_data_widget.dart';
+import 'package:sensor_gui/measured_data_visualiser/target_status_table.dart';
 
 Measurement defaultMeasurement = Measurement(List<int>.filled(64, 0),
     DateTime.now(), List<int>.filled(64, 0)); // Default measurement
@@ -35,7 +36,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
     return Column(
       children: <Widget>[
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(lblFileName),
             ElevatedButton(
@@ -53,6 +54,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
           ],
         ),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text("Show depth"),
             const SizedBox(width: 10),
@@ -68,17 +70,13 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
             const Text("Show target statuses"),
           ],
         ),
-        Row(
+        Column(
           children: [
             GridDataWidget(
               measurement: measurement[indexOfMeasurement],
               showTargetStatuses: showTargetStatuses,
             ),
-            Image.asset(
-              "assets/images/table_of_target_statuses.png",
-              width: 400,
-              height: 400,
-            ),
+            showTargetStatuses ? const TargetStatusTable() : const SizedBox(),
           ],
         ),
         SelectableText(measurement[indexOfMeasurement].time.toString()),
@@ -91,37 +89,38 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
           //label: "${indexOfMeasurement + 1} / ${measurement.length}",
         ),
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ElevatedButton(
+            ButtonChangeTime(
                 onPressed: () {
                   changeIndexOfMeasurement(-600);
                 },
-                child: const Text("- 1 min")),
-            ElevatedButton(
+                text: "- 1 min"),
+            ButtonChangeTime(
                 onPressed: () {
                   changeIndexOfMeasurement(-10);
                 },
-                child: const Text("- 1 s")),
-            ElevatedButton(
+                text: "- 1 s"),
+            ButtonChangeTime(
                 onPressed: () {
                   changeIndexOfMeasurement(-1);
                 },
-                child: const Text("-")),
-            ElevatedButton(
+                text: "-"),
+            ButtonChangeTime(
                 onPressed: () {
                   changeIndexOfMeasurement(1);
                 },
-                child: const Text("+")),
-            ElevatedButton(
+                text: "+"),
+            ButtonChangeTime(
                 onPressed: () {
                   changeIndexOfMeasurement(10);
                 },
-                child: const Text("+ 1 s")),
-            ElevatedButton(
+                text: "+ 1 s"),
+            ButtonChangeTime(
                 onPressed: () {
                   changeIndexOfMeasurement(600);
                 },
-                child: const Text("+ 1 min")),
+                text: "+ 1 min"),
           ],
         ),
         GridAlgorithmDataWidget(data: dataAlgorithmGrid)
@@ -160,10 +159,8 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
 
       String? pathProcessedData = await FilePicker.platform.saveFile();
       if (pathProcessedData != null) {
-       peopleDetector
-          .savePeopleCountHistory(pathProcessedData);       
+        peopleDetector.savePeopleCountHistory(pathProcessedData);
       }
-      
     }
 
     setState(() {
@@ -188,5 +185,27 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
       dataAlgorithmGrid = peopleDetector.processFrame(
           measurement[indexOfMeasurement]); // Process the current measurement
     });
+  }
+}
+
+class ButtonChangeTime extends StatelessWidget {
+  const ButtonChangeTime({
+    super.key,
+    required this.onPressed,
+    required this.text,
+  });
+
+  final VoidCallback onPressed;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(5),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        child: Text(text),
+      ),
+    );
   }
 }
