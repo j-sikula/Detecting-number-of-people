@@ -8,7 +8,7 @@ import 'dart:developer' as dev;
 const MAX_MOVEMENT_LENGTH = 4.3; // Maximum length of the movement in pixxels
 const MIN_LOCAL_MINIMUMS_DISTANCE = 4.0;
 const depthThreshold =
-    1300; // Threshold for depth data to consider a person present
+    1380; // Threshold for depth data to consider a person present
 
 class PeopleDetector {
   int peopleCount = 0; // Number of people in the room
@@ -118,34 +118,6 @@ class PeopleDetector {
         i--;
       }
     }
-/*
-    List<int> locationOfPresentPeople =
-        []; // List to store indexes of present people
-    List<bool> isPresent = List.filled(
-        localMinimums.length, true); // List to store presence status
-    for (int i = 0; i < localMinimums.length; i++) {
-      // Reduce local minimums too close to each other
-      if (!isPresent[i]) continue; // Skip if already marked as not present
-      for (int j = i + 1; j < localMinimums.length; j++) {
-        if (!isPresent[j]) continue; // Skip if already marked as not present
-        if (getDistance(localMinimums[i], localMinimums[j]) <
-            MIN_LOCAL_MINIMUMS_DISTANCE) {
-          if (weightedData[localMinimums[j]] < weightedData[localMinimums[i]]) {
-            isPresent[i] = false;
-          } else {
-            isPresent[j] = false;
-          }
-        }
-      }
-    }
-    for (int i = 0; i < localMinimums.length; i++) {
-      if (isPresent[i]) {
-        locationOfPresentPeople
-            .add(localMinimums[i]); // Add the index of the local minimum
-        toReturn
-            .highlightData(localMinimums[i]); // Highlight the local minimums
-      }
-    }*/
 
     List<int> highlight =
         countPeople(localMinimums); // Count people in the grid
@@ -179,34 +151,23 @@ class PeopleDetector {
     List<int> indexesOfPresentPeople =
         []; // List to store indexes of present people
 
-    for (PersonMovement personMovement in peopleMovements) {
-      int destinationIndex = findLocalMinimum(personMovement.currentPosition);
-      // correct the destination index if a lower local minimum is found nearby
-      for (int i in indexesOfLocalMinimums) {
-        if (i == destinationIndex) {
-          // If the person is already present, skip
-          continue;
-        }
-        if (getDistance(i, personMovement.currentPosition) <
-            MAX_MOVEMENT_LENGTH) {
-          if (weightedData[i] < weightedData[destinationIndex]) {
-            destinationIndex = i; // Update the index of the local minimum
-          }
-        }
-      }
+    for (int i = 0; i < peopleMovements.length; i++) {	
+      int destinationIndex = findLocalMinimum(peopleMovements[i].currentPosition);
+     
       if (weightedData[destinationIndex] < depthThreshold) {
         if (isBorderIndex(destinationIndex)) {
           if (isExitBorderIndex(destinationIndex) ==
-              isExitBorderIndex(personMovement.startPosition)) {
+              isExitBorderIndex(peopleMovements[i].startPosition)) {
             // Person exits where entered
-            personMovement.updatePosition(
+            peopleMovements[i].updatePosition(
                 destinationIndex); // Update the current position
-            personMovement.startPosition =
+            peopleMovements[i].startPosition =
                 destinationIndex; // Update the start position
           } else {
+            // Check if there is not multiple detection of the same person
             if (peopleCountHistory.isEmpty ||
                 peopleCountHistory.last.time != lastMeasurement.time) {
-              if (personMovement.startedExiting) {
+              if (peopleMovements[i].startedExiting) {
                 dev.log("Person exited ${lastMeasurement.time}");
                 peopleCount--;
                 peopleCountHistory
@@ -218,11 +179,12 @@ class PeopleDetector {
                     .add(PeopleCount(peopleCount, lastMeasurement.time));
               }
             }
-            personMovement = PersonMovement(
+            // Note: To modify list in Dart, syntax for(var element in list) cannot be used, use iteration for(int i = 0; i < list.length; i++)
+            peopleMovements[i] = PersonMovement(
                 destinationIndex); // After finishing the movement, create a new movement for case it returns back immediately
           }
         } else {
-          personMovement
+          peopleMovements[i]
               .updatePosition(destinationIndex); // Update the current position
         }
 
@@ -414,6 +376,13 @@ class PeopleDetector {
     } catch (e) {
       dev.log('Failed to save data to file: $e');
     }
+  }
+
+  /// Resets the people counter and clears the history
+  void resetPeopleCounter() {
+    peopleCount = 0; // Reset the people count
+    peopleCountHistory.clear(); // Clear the history
+    peopleMovements.clear(); // Clear the movements
   }
 }
 

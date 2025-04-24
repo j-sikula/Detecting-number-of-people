@@ -150,8 +150,10 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
       }
       setState(() {
         lblFileName = path;
+        indexOfMeasurement = 0;
         measurement = measurements;
       });
+      peopleDetector.resetPeopleCounter();
       for (var mes in measurement) {
         peopleDetector.processFrame(mes); // Process all measurements
       }
