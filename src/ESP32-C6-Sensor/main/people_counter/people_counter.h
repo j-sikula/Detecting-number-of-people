@@ -44,7 +44,7 @@ uint16_t *compute_background_data(measurement_t *data);
  * @brief Upload the current_people_count to the Google Sheets
  * @param data_to_google_sheets_queue The queue to send the people count data to
  */
-void upload_people_count(QueueHandle_t data_to_google_sheets_queue);
+void upload_people_count(QueueHandle_t data_to_google_sheets_queue, int16_t n_people_count);
 
 
 /**

@@ -109,6 +109,8 @@
         "people_counter.h": "c",
         "gpio.h": "c",
         "queue.h": "c",
-        "task.h": "c"
+        "task.h": "c",
+        "person_movement.h": "c",
+        "stdlib.h": "c"
     }
 }

@@ -60,7 +60,7 @@ void count_people(measurement_t *data, uint16_t *background, QueueHandle_t data_
 #ifdef ENABLE_BLINK_INDICATOR
                     single_blink(DEFAULT_BLINK_INTENSITY, 0, 0, 5);
 #endif
-                    upload_people_count(data_to_google_sheets_queue);
+                    upload_people_count(data_to_google_sheets_queue, current_people_count);
                 }
                 if (position_entered == ENTER_POSITION)
                 {
@@ -69,7 +69,7 @@ void count_people(measurement_t *data, uint16_t *background, QueueHandle_t data_
 #ifdef ENABLE_BLINK_INDICATOR
                     single_blink(0, DEFAULT_BLINK_INTENSITY, 0, 5);
 #endif
-                    upload_people_count(data_to_google_sheets_queue);
+                    upload_people_count(data_to_google_sheets_queue, current_people_count);
                 }
 
                 // Reset the position entered and the zones entered and exited
@@ -119,7 +119,7 @@ uint16_t *compute_background_data(measurement_t *data)
     return background;
 }
 
-void upload_people_count(QueueHandle_t data_to_google_sheets_queue)
+void upload_people_count(QueueHandle_t data_to_google_sheets_queue, int16_t n_people_count)
 {
     people_count_t *people_count = (people_count_t *)malloc(sizeof(people_count_t));
     if (people_count == NULL)
@@ -129,7 +129,7 @@ void upload_people_count(QueueHandle_t data_to_google_sheets_queue)
     }
 
     people_count->timestamp = get_current_time();
-    people_count->people_count = current_people_count;
+    people_count->people_count = n_people_count;
 
     if (xQueueSend(data_to_google_sheets_queue, &people_count, portMAX_DELAY) != pdPASS)
     {

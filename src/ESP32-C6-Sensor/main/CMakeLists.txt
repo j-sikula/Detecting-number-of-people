@@ -9,5 +9,7 @@ idf_component_register(SRCS "main.c"
                         SRCS "sd_card/sd_card.c"
                         SRCS "people_counter/people_counter.c"
                         SRCS "led_indicator/led_indicator.c"
+                        SRCS "people_counter/people_counter_correlation_matrix.c"
+                        SRCS "people_counter/person_movement.c"
                        INCLUDE_DIRS "."
                        EMBED_TXTFILES server_cert.pem)
