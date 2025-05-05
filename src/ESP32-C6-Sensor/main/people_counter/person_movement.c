@@ -112,7 +112,7 @@ uint8_t add_to_list(person_movement_t **start_pointer, uint8_t start_position_in
 uint8_t remove_unactive_from_list(person_movement_t **start_pointer)
 {
     person_movement_t *list_element = *start_pointer;
-    while (list_element->next_element_pointer != NULL) // iterate through the list
+    while (list_element != NULL) // iterate through the list
     {
         
 

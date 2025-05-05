@@ -4,15 +4,16 @@
 
 uint16_t correlation_matrix[N_PIXELS];
 
-#define DETECTION_GRID_SIZE 9
-uint8_t detection_grid[DETECTION_GRID_SIZE] = {1, 1, 1, 1, 2, 1, 1, 1, 1};
+#define DETECTION_GRID_SIZE 3
+#define DETECTION_GRID_LENGTH 9
+uint8_t detection_grid[DETECTION_GRID_LENGTH] = {1, 1, 1, 1, 2, 1, 1, 1, 1};
 #define MAX_MOVEMENT_LENGTH 4.3
 #define MIN_LOCAL_MINIMUMS_DISTANCE 4.0
 #define DEPTH_THRESHOLD 1390
 #define TAG "PeopleCounter"
 
-int16_t people_count = 0; // Number of people detected
-char *timestamp = NULL; // Timestamp of the measurement
+int16_t people_count = 0;              // Number of people detected
+char *timestamp = NULL;                // Timestamp of the measurement
 uint8_t movement_not_detected_yet = 0; // Flag to check if the movement is detected
 
 person_movement_t *person_movement_list = NULL; // Pointer to the head of the list
@@ -52,36 +53,50 @@ void process_frame(measurement_t *data, QueueHandle_t data_to_google_sheets_queu
         {
             depth_data[i] = 2100; // Set the depth data to background (2100 mm)
         }
-
-        for (uint8_t i = 0; i < N_PIXELS; i++)
+    }
+    for (uint8_t i = 0; i < N_PIXELS; i++)
+    {
+        uint8_t nWeightedCells = 0; // Number of weighted cells
+        for (uint8_t j = 0; j < DETECTION_GRID_LENGTH; j++)
         {
-            uint8_t nWeightedCells = 0; // Number of weighted cells
-            for (uint8_t j = 0; j < DETECTION_GRID_SIZE; j++)
+            int index = i +
+                        (8 * (j / DETECTION_GRID_SIZE) +
+                         j % DETECTION_GRID_SIZE -
+                         (DETECTION_GRID_SIZE - 1) / 2 * 9); // Calculate the index for the depth data grid
+            // Check if the index is within bounds and in the same row (overflow is handled)
+            if (index >= 0 &&
+                index < 64 &&
+                index / 8 ==
+                    i / 8 -
+                        (DETECTION_GRID_SIZE - 1) / 2 +
+                        j / DETECTION_GRID_SIZE)
             {
-                int index = i +
-                            (8 * (j / DETECTION_GRID_SIZE) +
-                             j % DETECTION_GRID_SIZE -
-                             (DETECTION_GRID_SIZE - 1) / 2 * 9); // Calculate the index for the depth data grid
-                // Check if the index is within bounds and in the same row (overflow is handled)
-                if (index >= 0 &&
-                    index < 64 &&
-                    index / 8 ==
-                        i / 8 -
-                            (DETECTION_GRID_SIZE - 1) / 2 +
-                            j / DETECTION_GRID_SIZE)
-                {
-                    correlation_matrix[i] += depth_data[index] * detection_grid[j];
-                    nWeightedCells++;
-                }
+                correlation_matrix[i] += depth_data[index] * detection_grid[j];
+                nWeightedCells++;
             }
-            correlation_matrix[i] = (correlation_matrix[i] / nWeightedCells);
         }
+        correlation_matrix[i] = (correlation_matrix[i] / nWeightedCells);
     }
 
     local_minimum_list_t *local_minimums = find_all_local_minimums(); // Find all local minimums in the correlation matrix
-    movement_not_detected_yet = 1; // Reset the flag for movement detection
+    local_minimum_list_t *local_minimum_i = local_minimums;           // Pointer to the head of the list
+    while (local_minimum_i != NULL)
+    {
+        if (correlation_matrix[local_minimum_i->index] > DEPTH_THRESHOLD)
+        {
+            local_minimum_list_t *tmp = local_minimum_i->next_element_pointer; // Store the element to be removed in a temporary variable
+            remove_local_minimum(&local_minimums, local_minimum_i->index);
+            local_minimum_i = tmp; // Update the pointer to the next element
+        }
+        else
+        {
+            local_minimum_i = local_minimum_i->next_element_pointer; // Move to the next element
+        }
+    }
+
+    movement_not_detected_yet = 1;                                                // Reset the flag for movement detection
     count_people_correlation_matrix(local_minimums, data_to_google_sheets_queue); // Count people based on the local minimums found
-    clear_local_minimum_list(&local_minimums);                 // Clear the list of local minimums
+    clear_local_minimum_list(&local_minimums);                                    // Clear the list of local minimums
 }
 /// Finds the index of the local minimum in the correlation_matrix array concerned as a 8x8 grid
 /// Algorithm: gradient descent
@@ -130,16 +145,16 @@ uint8_t find_local_minimum(uint8_t start_index)
 
 local_minimum_list_t *find_all_local_minimums()
 {
-    local_minimum_list_t *local_minimums; // Pointer to the head of the list
+    local_minimum_list_t *local_minimums = NULL; // Pointer to the head of the list
 
     for (uint8_t i = 0; i < 8; i++)
     {
         for (uint8_t j = 0; j < 8; j++)
         {
             uint8_t is_local_minimum = true;
-            for (uint8_t k = -1; k <= 1; k++)
+            for (int8_t k = -1; k <= 1; k++)
             {
-                for (uint8_t l = -1; l <= 1; l++)
+                for (int8_t l = -1; l <= 1; l++)
                 {
                     if (k == 0 && l == 0)
                         continue; // Skip the center element
@@ -195,6 +210,10 @@ void count_people_correlation_matrix(local_minimum_list_t *local_minimums, Queue
                 remove_from_list(&person_movement_list, person_movement_j);       // Remove the element from the list
                 person_movement_j = tmp;                                          // Update the pointer to the next element
             }
+            else
+            {
+                person_movement_j = person_movement_j->next_element_pointer; // Move to the next element
+            }
         }
         person_movement_i = person_movement_i->next_element_pointer; // Move to the next element
     }
@@ -209,7 +228,7 @@ void count_people_correlation_matrix(local_minimum_list_t *local_minimums, Queue
         {
             // If the distance is too big, remove the person from the list
             destination_index = person_movement_i->current_position;
-            //ESP_LOGI(TAG,"Overflowing distance, banned");
+            // ESP_LOGI(TAG,"Overflowing distance, banned");
         }
         if (correlation_matrix[destination_index] < DEPTH_THRESHOLD)
         {
@@ -231,28 +250,27 @@ void count_people_correlation_matrix(local_minimum_list_t *local_minimums, Queue
                         movement_not_detected_yet = 0; // Reset the flag for movement detection
                         if (person_movement_i->started_exiting)
                         {
-                            ESP_LOGI(TAG,"Person exited %s", timestamp);
+                            ESP_LOGI(TAG, "Person exited %s", timestamp);
                             people_count--;
                             upload_people_count(data_to_google_sheets_queue, people_count);
                         }
                         else
                         {
-                            ESP_LOGI(TAG,"Person entered %s", timestamp);
+                            ESP_LOGI(TAG, "Person entered %s", timestamp);
                             people_count++;
                             upload_people_count(data_to_google_sheets_queue, people_count);
                         }
                     }
                     reset_person_movement(person_movement_i,
-                                         destination_index);  // After finishing the movement, create a new movement for case it returns back immediately
+                                          destination_index); // After finishing the movement, create a new movement for case it returns back immediately
                 }
             }
             else
             {
                 update_position(person_movement_i, destination_index); // Update the current position
             }
-
-            
         }
+        person_movement_i = person_movement_i->next_element_pointer; // Move to the next element
     }
 
     local_minimum_list_t *local_minimum_i = local_minimums; // Pointer to the head of the list
@@ -266,14 +284,13 @@ void count_people_correlation_matrix(local_minimum_list_t *local_minimums, Queue
                 // If no people are present, add the first person
                 add_to_list(&person_movement_list,
                             local_minimum_i->index); // Add the person to the list
-                                
             }
             else
             {
-                if (is_current_index_in_list(person_movement_list, local_minimum_i->index))//indexesOfPresentPeople.contains(indexesOfLocalMinimums[i]))
+                if (is_current_index_in_list(person_movement_list, local_minimum_i->index)) // indexesOfPresentPeople.contains(indexesOfLocalMinimums[i]))
                 {
                     // If the person is already present, skip
-                    continue;
+                    
                 }
                 else
                 {
@@ -283,19 +300,18 @@ void count_people_correlation_matrix(local_minimum_list_t *local_minimums, Queue
                     while (person_movement_j != NULL)
                     {
                         min_distance = get_distance(person_movement_j->current_position,
-                                                  local_minimum_i->index);
+                                                    local_minimum_i->index);
                         person_movement_j = person_movement_j->next_element_pointer; // Move to the next element
                     }
                     if (min_distance >= MIN_LOCAL_MINIMUMS_DISTANCE)
                     {
                         add_to_list(&person_movement_list,
                                     local_minimum_i->index); // Add the person to the list
-                       
-                        
                     }
                 }
             }
         }
+        local_minimum_i = local_minimum_i->next_element_pointer; // Move to the next element
     }
 
     remove_unactive_from_list(&person_movement_list); // Remove unactive elements from the list
@@ -320,10 +336,10 @@ uint8_t is_exit_border_index(uint8_t index)
 
 double get_distance(uint8_t index1, uint8_t index2)
 {
-    uint8_t x1 = index1 % 8; // Column index of the first point
-    uint8_t y1 = index1 / 8; // Row index of the first point
-    uint8_t x2 = index2 % 8; // Column index of the second point
-    uint8_t y2 = index2 / 8; // Row index of the second point
+    uint8_t x1 = index1 % 8;                                   // Column index of the first point
+    uint8_t y1 = index1 / 8;                                   // Row index of the first point
+    uint8_t x2 = index2 % 8;                                   // Column index of the second point
+    uint8_t y2 = index2 / 8;                                   // Row index of the second point
     double distance = sqrt(pow(x2 - x1, 2) + pow(y2 - y1, 2)); // Calculate the Euclidean distance
     return distance;
 }
