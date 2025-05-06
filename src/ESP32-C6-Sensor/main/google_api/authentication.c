@@ -20,6 +20,8 @@ extern const uint8_t server_cert_pem_end[] asm("_binary_server_cert_pem_end");
 
 static const char *TAG = "api_authentication";
 time_t last_access_token_time = 0;
+uint8_t n_retries = 0;
+#define MAX_RETRIES 2
 
 char *create_jwt(const char *client_email, const char *private_key)
 {
@@ -130,12 +132,24 @@ char *exchange_jwt_for_access_token(const char *jwt)
                 cJSON_Delete(response_json);
             }
             free(response.buffer);
+            n_retries = 0;
         }
     }
     else
     {
         ESP_LOGE(TAG, "HTTP request failed: %s", esp_err_to_name(err));
         access_token = strdup("error");
+        if (n_retries < MAX_RETRIES)
+        {
+            n_retries++;
+            vTaskDelay(1000 / portTICK_PERIOD_MS);
+            access_token = exchange_jwt_for_access_token(jwt);
+        }
+        else
+        {
+            ESP_LOGE(TAG, "Max retries reached, failed to get access token");
+            n_retries = 0;
+        }
     }
 
     esp_http_client_cleanup(client);

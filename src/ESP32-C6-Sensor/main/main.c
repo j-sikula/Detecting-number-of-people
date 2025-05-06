@@ -67,7 +67,7 @@ void app_main(void)
 
 	xTaskCreate(vWifiTask, "wifi_task", 32 * 1024, NULL, 4, NULL);
 	xTaskCreate(vTaskSDCard, "sd_card_task", 32 * 1024, NULL, 5, NULL);
-	xTaskCreate(vTaskResetPeopleCounter, "reset_people_counter_task", 100, NULL, 3, NULL);
+	xTaskCreate(vTaskResetPeopleCounter, "rst_p_c_task", 1024, NULL, 3, NULL);
 	led_loop();
 }
 

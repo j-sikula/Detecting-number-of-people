@@ -101,6 +101,7 @@ uint8_t obtain_time(void)
 	}
 
 	ESP_LOGI(TAG, "Time is set");
+	ESP_LOGI(TAG, "Current time: %s", asctime(&timeinfo));
 	return 1;
 }
 

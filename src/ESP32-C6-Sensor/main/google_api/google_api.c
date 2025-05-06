@@ -6,8 +6,8 @@
 #include "esp_log.h"
 #include "cJSON.h"
 
-extern const uint8_t server_cert_pem_start[] asm("_binary_server_cert_pem_start");
-extern const uint8_t server_cert_pem_end[] asm("_binary_server_cert_pem_end");
+extern const uint8_t server_cert_pem_start[] asm("_binary_server_api_cert_pem_start");
+extern const uint8_t server_cert_pem_end[] asm("_binary_server_api_cert_pem_end");
 
 static const char *TAG = "google_sheets";
 
