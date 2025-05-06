@@ -2,7 +2,7 @@
 #include "esp_log.h"
 #include "measurement_utils/utils.h"
 #include "string.h"
-#include "people_counter/people_counter.h"
+#include "people_counter/people_counter_correlation_matrix.h"
 #include "led_indicator/led_indicator.h"
 
 uint8_t is_measuring = 1;
@@ -147,11 +147,14 @@ void startContinuousMeasurement(QueueHandle_t data_to_sd_queue, QueueHandle_t da
 					measurement[loop].distance_mm[i] = Results.distance_mm[i];
 					measurement[loop].status[i] = Results.target_status[i];
 				}
-
+#ifdef CORRELATION_MATRIX_ALGORITHM
+				process_frame(&measurement[loop],data_to_google_sheets_queue);
+#else
 				if (background != NULL)
 				{
 					count_people(&measurement[loop], background, data_to_google_sheets_queue);
 				}
+#endif
 
 #ifdef PRINT_DATA_TO_UART
 				printf("\nData\n%s\n", measurement[loop].timestamp);
@@ -169,7 +172,7 @@ void startContinuousMeasurement(QueueHandle_t data_to_sd_queue, QueueHandle_t da
 			 * file, not in API) */
 			VL53L7CX_WaitMs(&(Dev.platform), 10);
 		}
-
+#ifndef CORRELATION_MATRIX_ALGORITHM
 		if (background == NULL)
 		{
 			background = compute_background_data(measurement);
@@ -179,7 +182,7 @@ void startContinuousMeasurement(QueueHandle_t data_to_sd_queue, QueueHandle_t da
 				printf("%d, ", measurement[i].distance_mm[20]);
 			}
 		}
-		
+#endif	
 
 		if (xQueueSend(data_to_sd_queue, &measurement, portMAX_DELAY) != pdPASS)
 		{

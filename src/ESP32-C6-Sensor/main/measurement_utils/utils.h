@@ -11,6 +11,10 @@
 #define LOG_FILE_NAME "/sdcard/log.log"
 #define DATE_TIME_LENGTH 23 //for example 2025-02-13 12:23:26,874
 
+/// @brief returns 1 once a day
+/// @return 1 only once when called between 0:00AM and 1:00AM, otherwise 0
+uint8_t is_midnight();
+
 /**
  * @brief Allocate memory for a string containing the current time
  * @note Need to free the memory after use

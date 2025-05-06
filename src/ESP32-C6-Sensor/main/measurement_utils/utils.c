@@ -6,6 +6,29 @@
 #include "esp_log.h"
 
 static const char *TAG = "utils";
+static uint8_t is_midnight_not_called = 1;
+uint8_t is_midnight()
+{
+
+	time_t rawtime;
+	struct tm *timeinfo;
+	time(&rawtime);
+	timeinfo = localtime(&rawtime);
+	if (timeinfo->tm_hour == 0)
+	{
+		if (is_midnight_not_called)
+		{
+			is_midnight_not_called = 0;
+			return 1;
+		}
+	}
+	else
+	{
+		is_midnight_not_called = 1;
+	}
+
+	return 0;
+}
 
 char *get_current_time(void)
 {

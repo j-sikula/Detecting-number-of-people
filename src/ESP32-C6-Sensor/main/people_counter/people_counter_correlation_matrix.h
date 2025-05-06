@@ -8,8 +8,13 @@
 #include <math.h>
 
 
-
+/// @brief Invokes algorithm for counting people using correlation matrix
+/// @param data 
+/// @param data_to_google_sheets_queue 
 void process_frame(measurement_t *data, QueueHandle_t data_to_google_sheets_queue);
+
+/// @brief Sets people_count to 0
+void reset_people_count();
 
 uint8_t find_local_minimum(uint8_t start_index);
 

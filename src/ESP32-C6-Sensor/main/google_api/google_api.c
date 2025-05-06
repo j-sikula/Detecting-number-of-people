@@ -405,6 +405,7 @@ uint16_t _send_api_request(const char *url, esp_http_client_method_t method, cha
             {
                 ESP_LOGE("Google Sheets", "Error before: %s", error_ptr);
             }
+            cJSON_Delete(json);
         }
         else
         {

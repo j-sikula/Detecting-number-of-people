@@ -23,7 +23,7 @@
 #include "google_api/keys.h"
 #include "google_api/google_api.h"
 #include "google_api/authentication.h"
-#include "people_counter/people_counter.h"
+#include "people_counter/people_counter_correlation_matrix.h"
 
 #include "sd_card/sd_card.h"
 
@@ -40,6 +40,8 @@ static QueueHandle_t data_to_google_sheets_queue;
 void vTaskLoop();
 void vWifiTask();
 void vTaskSDCard();
+// reset people count at midnight
+void vTaskResetPeopleCounter();
 
 void app_main(void)
 {
@@ -65,6 +67,7 @@ void app_main(void)
 
 	xTaskCreate(vWifiTask, "wifi_task", 32 * 1024, NULL, 4, NULL);
 	xTaskCreate(vTaskSDCard, "sd_card_task", 32 * 1024, NULL, 5, NULL);
+	xTaskCreate(vTaskResetPeopleCounter, "reset_people_counter_task", 100, NULL, 3, NULL);
 	led_loop();
 }
 
@@ -163,5 +166,20 @@ void vWifiTask()
 		}
 	}
 
+	vTaskDelete(NULL);
+}
+
+void vTaskResetPeopleCounter() 
+{
+	while (1)
+	{
+		if (is_midnight() == 1)
+		{
+			reset_people_count();
+			vTaskDelay(36000000 / portTICK_PERIOD_MS); // sleep 10 h
+		}
+		vTaskDelay(3600000/portTICK_PERIOD_MS); // sleep 1 h
+
+	}
 	vTaskDelete(NULL);
 }

@@ -51,7 +51,7 @@ void process_frame(measurement_t *data, QueueHandle_t data_to_google_sheets_queu
              data->distance_mm[(i + 32) % 64] <= 340 &&
              data->distance_mm[(i + 32) % 64] >= 280))
         {
-            depth_data[i] = 2100; // Set the depth data to background (2100 mm)
+            depth_data[i] = BACKGROUND_HEIGHT; // Set the depth data to background (2100 mm)
         }
     }
     for (uint8_t i = 0; i < N_PIXELS; i++)
@@ -97,6 +97,10 @@ void process_frame(measurement_t *data, QueueHandle_t data_to_google_sheets_queu
     movement_not_detected_yet = 1;                                                // Reset the flag for movement detection
     count_people_correlation_matrix(local_minimums, data_to_google_sheets_queue); // Count people based on the local minimums found
     clear_local_minimum_list(&local_minimums);                                    // Clear the list of local minimums
+}
+void reset_people_count()
+{
+    people_count = 0;
 }
 /// Finds the index of the local minimum in the correlation_matrix array concerned as a 8x8 grid
 /// Algorithm: gradient descent
@@ -252,12 +256,18 @@ void count_people_correlation_matrix(local_minimum_list_t *local_minimums, Queue
                         {
                             ESP_LOGI(TAG, "Person exited %s", timestamp);
                             people_count--;
+#ifdef ENABLE_BLINK_INDICATOR
+                            single_blink(DEFAULT_BLINK_INTENSITY, 0, 0, 2);
+#endif
                             upload_people_count(data_to_google_sheets_queue, people_count);
                         }
                         else
                         {
                             ESP_LOGI(TAG, "Person entered %s", timestamp);
                             people_count++;
+#ifdef ENABLE_BLINK_INDICATOR
+                            single_blink(0, DEFAULT_BLINK_INTENSITY, 0, 2);
+#endif
                             upload_people_count(data_to_google_sheets_queue, people_count);
                         }
                     }
@@ -290,7 +300,6 @@ void count_people_correlation_matrix(local_minimum_list_t *local_minimums, Queue
                 if (is_current_index_in_list(person_movement_list, local_minimum_i->index)) // indexesOfPresentPeople.contains(indexesOfLocalMinimums[i]))
                 {
                     // If the person is already present, skip
-                    
                 }
                 else
                 {
