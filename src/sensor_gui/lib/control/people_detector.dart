@@ -215,11 +215,12 @@ class PeopleDetector {
             for (int j = 0; j < peopleMovements.length; j++) {
               minDistance = getDistance(peopleMovements[j].currentPosition,
                   indexesOfLocalMinimums[i]);
-            }
-            if (minDistance >= MIN_LOCAL_MINIMUMS_DISTANCE) {
-              peopleMovements.add(PersonMovement(indexesOfLocalMinimums[i]));
-              indexesOfPresentPeople.add(indexesOfLocalMinimums[
-                  i]); // Add the index of the local minimum
+            
+              if (minDistance >= MIN_LOCAL_MINIMUMS_DISTANCE) {
+                peopleMovements.add(PersonMovement(indexesOfLocalMinimums[i]));
+                indexesOfPresentPeople.add(indexesOfLocalMinimums[
+                    i]); // Add the index of the local minimum
+              }
             }
           }
         }

@@ -10,10 +10,9 @@ class GridAlgorithmDataWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text(
+        Container(child: Text(
           data.textToDisplay,
-          
-        ),
+        ),),
         SizedBox(
           width: 400,
           height: 400,
@@ -28,10 +27,11 @@ class GridAlgorithmDataWidget extends StatelessWidget {
               return Container(
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: data.highlightedData[index] ?? Color.lerp(
-                      const Color.fromARGB(255, 14, 5, 141),
-                      const Color.fromARGB(255, 255, 17, 0),
-                      data.dataGrid[index] / 4000),
+                  color: data.highlightedData[index] ??
+                      Color.lerp(
+                          const Color.fromARGB(255, 14, 5, 141),
+                          const Color.fromARGB(255, 255, 17, 0),
+                          data.dataGrid[index] / 4000),
                   border: Border.all(color: Colors.black),
                 ),
                 child: Text(

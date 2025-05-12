@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sensor_gui/measured_data_visualiser/measured_data_visualiser_screen.dart';
+import 'package:sensor_gui/resullts_visualiser/home_screen.dart';
 import 'package:sensor_gui/sensor_data_visualiser/sensor_data_visualiser_screen.dart';
 
 class NavigationMainScreen extends StatefulWidget {
@@ -49,9 +50,7 @@ class _NavigationMainScreenState extends State<NavigationMainScreen> {
                     )
                   : const SizedBox(),
               <Widget>[
-                const SizedBox(
-                  width: 10,
-                ),
+                const HomeScreen(),
                 const SensorDataVisualiserScreen(),
                 SizedBox(width: constraints.maxWidth - 120, child: const MeasuredDataVisualiserScreen()),
               ][currentPageIndex],
