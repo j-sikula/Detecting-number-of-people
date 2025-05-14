@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define EXIT_BORDER_INDEX_CONDITION <= 3
+#define EXIT_BORDER_INDEX_CONDITION <= 3 // determines columns where starts exiting
 
 typedef struct person_movement
 {
@@ -21,10 +21,15 @@ typedef struct local_minimum_list
     struct local_minimum_list *next_element_pointer;
 } local_minimum_list_t;
 
+/// @brief 
+/// @param start_pointer pointer to pointer to the head of the list; if null, creates new linked list
+/// @param index of local minimum (range 0-63)
 void add_local_minimum(local_minimum_list_t **start_pointer, uint8_t index);
 
 void remove_local_minimum(local_minimum_list_t **start_pointer, uint8_t index);
 
+/// @brief clears the list and frees memory
+/// @param start_pointer pointer to pointer to the head of the list
 void clear_local_minimum_list(local_minimum_list_t **start_pointer);
 
 person_movement_t *create_list(uint8_t start_position_index);
