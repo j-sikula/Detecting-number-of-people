@@ -26,7 +26,7 @@ class GridDataWidget extends StatelessWidget {
             margin: const EdgeInsets.all(4.0),
             height: 5,
             width: 5,
-            color: measurement.statuses[index] == 255? const Color.fromRGBO(5, 5, 5, 0): Color.lerp(
+            color: measurement.statuses[index] == 255? const Color.fromRGBO(5, 5, 5, 1.0): Color.lerp(
                 const Color.fromARGB(255, 14, 5, 141),
                 const Color.fromARGB(255, 255, 17, 0),
                 measurement.depthData[index] / 4000),

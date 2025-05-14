@@ -114,3 +114,14 @@ class LocalMaximum {
     return position * nZones ~/ 64;
   }
 }
+
+
+class PeopleCount {
+  int count;
+  DateTime timestamp;
+  PeopleCount(this.timestamp, this.count);
+
+  double getTimestampInMiliseconds() {
+    return timestamp.millisecondsSinceEpoch.toDouble();
+  }
+}

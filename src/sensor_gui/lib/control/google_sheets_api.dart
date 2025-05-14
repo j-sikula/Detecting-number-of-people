@@ -3,6 +3,8 @@ import 'package:googleapis/sheets/v4.dart';
 import 'package:googleapis_auth/auth_io.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:intl/intl.dart';
+import 'package:sensor_gui/control/people_counter.dart';
 
 class GoogleSheetsApi {
   SheetsApi? sheetsApi;
@@ -128,6 +130,38 @@ class GoogleSheetsApi {
       return false;
     }
     return true;
+  }
+
+  Future<List<PeopleCount>> getPeopleCount(String sheetName) async {
+    if (sheetsApi == null) {
+      log('Google Sheets API is not initialized');
+      return [];
+    }
+
+    try {
+      final response = await sheetsApi!.spreadsheets.values.get(
+        spreadsheetId,
+        '$sheetName!A1:B',
+      );
+
+      final List<PeopleCount> peopleCounts = [];
+
+      if (response.values != null) {
+        for (List<Object?> row in response.values!) {
+          if (row.length >= 2) {
+            final dateTime = DateFormat("yyyy-MM-dd HH:mm:ss,SSS").parse(row[0] as String, true).toLocal();
+            final count = int.tryParse(row[1] as String) ?? 0;
+            
+            peopleCounts.add(PeopleCount(dateTime, count));
+          }
+        }
+      }
+
+      return peopleCounts;
+    } catch (e) {
+      log('Failed to get people count: $e');
+      return [];
+    }
   }
 
   
