@@ -1,0 +1,2 @@
+C:/Users/Host/Documents/Bc/Detecting-number-of-people/src/sensor_gui/android/app/.cxx/Debug/731ti285/x86/CMakeFiles/edit_cache.dir
+C:/Users/Host/Documents/Bc/Detecting-number-of-people/src/sensor_gui/android/app/.cxx/Debug/731ti285/x86/CMakeFiles/rebuild_cache.dir

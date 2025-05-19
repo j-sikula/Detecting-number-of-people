@@ -31,7 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   window_size: ^0.1.0 # for setting window size
-  flutter_libserialport: ^0.4.0
+  #flutter_libserialport: ^0.5.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -49,7 +49,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -100,3 +99,9 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+dependency_overrides:
+  # because of https://github.com/jpnurmi/flutter_libserialport/issues/128
+  flutter_libserialport:
+    git:
+      url: https://github.com/kapil708/flutter_libserialport
+      ref: flutter_3.29.0

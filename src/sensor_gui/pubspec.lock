@@ -135,13 +135,14 @@ packages:
     source: sdk
     version: "0.0.0"
   flutter_libserialport:
-    dependency: "direct main"
+    dependency: "direct overridden"
     description:
-      name: flutter_libserialport
-      sha256: "20c320dcde8592a16f9badc0cacad61b1fb283dbec647b6ebfc1020f8274c67b"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.4.0"
+      path: "."
+      ref: "flutter_3.29.0"
+      resolved-ref: e5a70fcb6acba388c0e5dfcedbb2e5b0088d0468
+      url: "https://github.com/kapil708/flutter_libserialport"
+    source: git
+    version: "0.5.0"
   flutter_lints:
     dependency: "direct dev"
     description:
