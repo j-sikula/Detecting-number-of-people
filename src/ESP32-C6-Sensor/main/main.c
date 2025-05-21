@@ -1,21 +1,16 @@
-/* Blink Example
+///
+/// @file main.c
+/// @brief Main file for the ESP32 application
+/// @details This file contains the main function, which starts the tasks for sensor control, Wi-Fi, SD card and resetting people count. Main function continues to LED indicator loop.
+/// @author Josef Sikula
+/// @license MIT
 
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-#include <stdio.h>
-#include <time.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
-#include "driver/gpio.h"
 #include "esp_log.h"
+
 #include "led_indicator/led_indicator.h"
-#include "driver/i2c.h"	 // Inter-Integrated Circuit driver
-#include "driver/uart.h" // UART driver
 #include "measurement_utils/sensor.h"
 #include "wifi/wifi_controller.h"
 
@@ -27,9 +22,6 @@
 
 #include "sd_card/sd_card.h"
 
-#include "esp_heap_caps.h"
-#include "esp_vfs_fat.h" // Include the header for file handling
-
 #define MIN_GOOGLE_SHEETS_UPDATE_PERIOD 10000 // 10 seconds
 
 static char *google_api_access_token = NULL;
@@ -37,10 +29,17 @@ static char *google_api_access_token = NULL;
 static QueueHandle_t data_to_sd_queue;
 static QueueHandle_t data_to_google_sheets_queue;
 
+/// @brief Task for sensor control
+/// @details Initializes the sensor and starts continuous measurement.
 void vTaskLoop();
-void vWifiTask();
+/// @brief Task for Wi-Fi connection
+/// @details Connects to Wi-Fi and obtains time. Uploads data to Google Sheets.
+void vTaskWifi();
+/// @brief Task for SD card
+/// @details Initializes the SD card and saves raw data from sensor and logs to it. Refreshes log file every 2 minutes.
 void vTaskSDCard();
-// reset people count at midnight
+/// @brief Task for resetting people count
+/// @details Resets people count every day between 00:00 and 00:59.
 void vTaskResetPeopleCounter();
 
 void app_main(void)
@@ -65,7 +64,7 @@ void app_main(void)
 
 	xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 6, NULL);
 
-	xTaskCreate(vWifiTask, "wifi_task", 32 * 1024, NULL, 4, NULL);
+	xTaskCreate(vTaskWifi, "wifi_task", 32 * 1024, NULL, 4, NULL);
 	xTaskCreate(vTaskSDCard, "sd_card_task", 32 * 1024, NULL, 5, NULL);
 	xTaskCreate(vTaskResetPeopleCounter, "rst_p_c_task", 1024, NULL, 3, NULL);
 	led_loop();
@@ -79,7 +78,7 @@ void vTaskSDCard()
 	uint8_t log_file_counter = 0;
 	while (true)
 	{
-		if (log_file_counter >= 10) // refresh log file every 2 minutes
+		if (log_file_counter >= 10) // refresh log file every cca 2 minutes (after 10 times received raw data per 10s)
 		{
 			log_file_counter = 0;
 			date = get_current_date();
@@ -89,11 +88,12 @@ void vTaskSDCard()
 			}
 			free(date);
 			ESP_LOGI("vTaskSDCard", "Log file refreshed");
-		} else
+		}
+		else
 		{
 			log_file_counter++;
 		}
-		
+
 		measurement_t *data;
 		if (xQueueReceive(data_to_sd_queue, &data, portMAX_DELAY) == pdPASS)
 		{
@@ -119,7 +119,7 @@ void vTaskLoop()
 	vTaskDelete(NULL);
 }
 
-void vWifiTask()
+void vTaskWifi()
 {
 	nvs_flash_init();
 	wifi_task(NULL);
@@ -136,11 +136,11 @@ void vWifiTask()
 				vTaskDelay(MIN_GOOGLE_SHEETS_UPDATE_PERIOD / portTICK_PERIOD_MS); // wait for other possible data
 
 				uint8_t n_data = uxQueueMessagesWaiting(data_to_google_sheets_queue);
-				ESP_LOGI("vWifiTask", "Received data from queue");
-				
-				if(checkAccessTokenValidity(&google_api_access_token) == 0)
+				ESP_LOGI("vTaskWifi", "Received data from queue");
+
+				if (checkAccessTokenValidity(&google_api_access_token) == 0)
 				{
-					ESP_LOGI("vWifiTask", "acces token before expiration, generated new one, %s", google_api_access_token);
+					ESP_LOGI("vTaskWifi", "acces token before expiration, generated new one, %s", google_api_access_token);
 				}
 				char *date = get_current_week();
 				people_count_t *data[n_data];
@@ -149,7 +149,7 @@ void vWifiTask()
 				{
 					if (xQueueReceive(data_to_google_sheets_queue, &data[i], 0) != pdPASS)
 					{
-						ESP_LOGE("vWifiTask", "Failed to receive data from queue");
+						ESP_LOGE("vTaskWifi", "Failed to receive data from queue");
 					}
 				}
 
@@ -169,7 +169,7 @@ void vWifiTask()
 	vTaskDelete(NULL);
 }
 
-void vTaskResetPeopleCounter() 
+void vTaskResetPeopleCounter()
 {
 	while (1)
 	{
@@ -178,8 +178,7 @@ void vTaskResetPeopleCounter()
 			reset_people_count();
 			vTaskDelay(36000000 / portTICK_PERIOD_MS); // sleep 10 h
 		}
-		vTaskDelay(3600000/portTICK_PERIOD_MS); // sleep 1 h
-
+		vTaskDelay(3600000 / portTICK_PERIOD_MS); // sleep 1 h
 	}
 	vTaskDelete(NULL);
 }
