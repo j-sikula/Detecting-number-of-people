@@ -49,11 +49,16 @@ class _NavigationMainScreenState extends State<NavigationMainScreen> {
                       ],
                     )
                   : const SizedBox(),
-              <Widget>[
-                const HomeScreen(),
-                const SensorDataVisualiserScreen(),
-                SizedBox(width: constraints.maxWidth - 120, child: const MeasuredDataVisualiserScreen()),
-              ][currentPageIndex],
+              SizedBox(
+                width: constraints.maxWidth < constraints.maxHeight
+                    ? constraints.maxWidth
+                    : constraints.maxWidth - 120,
+                child: <Widget>[
+                  const HomeScreen(),
+                  const SensorDataVisualiserScreen(),
+                  const MeasuredDataVisualiserScreen(),
+                ][currentPageIndex],
+              ),
             ],
           ),
           bottomNavigationBar: constraints.maxWidth < constraints.maxHeight

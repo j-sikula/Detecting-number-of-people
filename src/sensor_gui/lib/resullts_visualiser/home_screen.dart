@@ -31,47 +31,55 @@ class HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              margin: const EdgeInsets.all(10),
-              child: DropdownMenu<int>(
-                  initialSelection: _selectedIndex,
-                  label: const Text('Data source'),
-                  width: 180,
-                  onSelected: onSelectedIndex,
-                  dropdownMenuEntries: const [
-                    DropdownMenuEntry<int>(
-                      value: 0,
-                      label: "Last hour",
-                      enabled: true,
-                    ),
-                    DropdownMenuEntry<int>(
-                      value: 1,
-                      label: "Last day",
-                      enabled: true,
-                    ),
-                    DropdownMenuEntry<int>(
-                      value: 2,
-                      label: "Last week",
-                      enabled: true,
-                    ),
-                    DropdownMenuEntry<int>(
-                      value: 3,
-                      label: "Custom range",
-                      enabled: true,
-                    ),
-                  ]),
-            ),
-            ElevatedButton(onPressed: onPressed, child: const Icon(Icons.refresh)),
-          ],
-        ),
-        PeopleCountGraph(dataPoints: dataPoints),
-      ],
-    );
+    return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+      double? width = constraints.maxWidth;
+      if (width > constraints.maxHeight) {
+        width = null;
+      }
+      return Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                margin: const EdgeInsets.all(10),
+                child: DropdownMenu<int>(
+                    initialSelection: _selectedIndex,
+                    label: const Text('Data source'),
+                    width: 180,
+                    onSelected: onSelectedIndex,
+                    dropdownMenuEntries: const [
+                      DropdownMenuEntry<int>(
+                        value: 0,
+                        label: "Last hour",
+                        enabled: true,
+                      ),
+                      DropdownMenuEntry<int>(
+                        value: 1,
+                        label: "Last day",
+                        enabled: true,
+                      ),
+                      DropdownMenuEntry<int>(
+                        value: 2,
+                        label: "Last week",
+                        enabled: true,
+                      ),
+                      DropdownMenuEntry<int>(
+                        value: 3,
+                        label: "Custom range",
+                        enabled: true,
+                      ),
+                    ]),
+              ),
+              ElevatedButton(
+                  onPressed: onPressed, child: const Icon(Icons.refresh)),
+            ],
+          ),
+          PeopleCountGraph(dataPoints: dataPoints, width: width ?? 600),
+        ],
+      );
+    });
   }
 
   void onPressed() async {
@@ -100,8 +108,8 @@ class HomeScreenState extends State<HomeScreen> {
         lastDate: DateTime.now(),
       );
       if (range != null) {
-        data = fromListPeopleCount(await peopleCountHandler!.getPeopleCountData(
-            range.start, range.end));
+        data = fromListPeopleCount(await peopleCountHandler!
+            .getPeopleCountData(range.start, range.end));
       }
     }
     setState(() {

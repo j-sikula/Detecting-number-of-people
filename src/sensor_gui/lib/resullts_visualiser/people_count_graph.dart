@@ -5,14 +5,18 @@ import 'package:intl/intl.dart'; // Add this import for date formatting
 class PeopleCountGraph extends StatelessWidget {
   final List<FlSpot> dataPoints;
   late final double xInterval;
+  final double width;
+  final double height;
 
-  PeopleCountGraph({super.key, required this.dataPoints}) {
+  PeopleCountGraph(
+      {super.key,
+      required this.dataPoints,
+      this.width = 600,
+      this.height = 300}) {
     if (dataPoints.isNotEmpty) {
       xInterval = dataPoints.last.x - dataPoints.first.x;
-    } 
-    
+    }
   }
-  
 
   @override
   Widget build(BuildContext context) {
@@ -38,8 +42,8 @@ class PeopleCountGraph extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 300, // Ensure height is explicitly defined
-              width: 600, // Add width constraint
+              height: height, // Ensure height is explicitly defined
+              width: width, // Add width constraint
               child: LineChart(
                 LineChartData(
                   gridData: const FlGridData(show: true),
@@ -97,7 +101,6 @@ class PeopleCountGraph extends StatelessWidget {
                     ),
                   ],
                   lineTouchData: LineTouchData(
-
                     touchTooltipData: LineTouchTooltipData(
                       getTooltipItems: (touchedSpots) {
                         return touchedSpots.map((spot) {

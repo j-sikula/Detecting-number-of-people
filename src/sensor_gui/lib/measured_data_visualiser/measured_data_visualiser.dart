@@ -88,40 +88,43 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
           divisions: measurement.length > 1 ? measurement.length - 1 : null,
           //label: "${indexOfMeasurement + 1} / ${measurement.length}",
         ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ButtonChangeTime(
-                onPressed: () {
-                  changeIndexOfMeasurement(-600);
-                },
-                text: "- 1 min"),
-            ButtonChangeTime(
-                onPressed: () {
-                  changeIndexOfMeasurement(-10);
-                },
-                text: "- 1 s"),
-            ButtonChangeTime(
-                onPressed: () {
-                  changeIndexOfMeasurement(-1);
-                },
-                text: "-"),
-            ButtonChangeTime(
-                onPressed: () {
-                  changeIndexOfMeasurement(1);
-                },
-                text: "+"),
-            ButtonChangeTime(
-                onPressed: () {
-                  changeIndexOfMeasurement(10);
-                },
-                text: "+ 1 s"),
-            ButtonChangeTime(
-                onPressed: () {
-                  changeIndexOfMeasurement(600);
-                },
-                text: "+ 1 min"),
-          ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ButtonChangeTime(
+                  onPressed: () {
+                    changeIndexOfMeasurement(-600);
+                  },
+                  text: "- 1 min"),
+              ButtonChangeTime(
+                  onPressed: () {
+                    changeIndexOfMeasurement(-10);
+                  },
+                  text: "- 1 s"),
+              ButtonChangeTime(
+                  onPressed: () {
+                    changeIndexOfMeasurement(-1);
+                  },
+                  text: "-"),
+              ButtonChangeTime(
+                  onPressed: () {
+                    changeIndexOfMeasurement(1);
+                  },
+                  text: "+"),
+              ButtonChangeTime(
+                  onPressed: () {
+                    changeIndexOfMeasurement(10);
+                  },
+                  text: "+ 1 s"),
+              ButtonChangeTime(
+                  onPressed: () {
+                    changeIndexOfMeasurement(600);
+                  },
+                  text: "+ 1 min"),
+            ],
+          ),
         ),
         GridAlgorithmDataWidget(data: dataAlgorithmGrid)
       ],
