@@ -1,6 +1,7 @@
 /**
  *
  * Copyright (c) 2021 STMicroelectronics.
+ * Modified by (c) 2025 Josef Sikula
  * All rights reserved.
  *
  * This software is licensed under terms that can be found in the LICENSE file

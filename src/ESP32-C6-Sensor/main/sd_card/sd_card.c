@@ -2,11 +2,7 @@
 
 static const char *TAG = "SD_CARD";
 
-/**
- * @brief Initialize the SD card.
- * source: https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/sdmmc/main/sd_card_example_main.c
- * @author Espressif under Apache license
- */
+
 void init_sd_card()
 {
     esp_err_t ret;
@@ -109,72 +105,4 @@ void save_raw_data(const char *filename, measurement_t *measurement)
     fclose(f);
     ESP_LOGI("SD Card", "File written: %s", filepath);
     free(measurement);
-}
-
-char *read_data(const char *filename, int size)
-{
-    if (size <= 0)
-    {
-        ESP_LOGE("SD Card", "Invalid size");
-        return NULL;
-    }
-    char filepath[256];
-    snprintf(filepath, sizeof(filepath), "%s/%s", MOUNT_POINT, filename);
-
-    FILE *f = fopen(filepath, "r");
-    if (f == NULL)
-    {
-        ESP_LOGE("SD Card", "Failed to open file for writing");
-        return NULL;
-    }
-
-    char *buffer = (char *)malloc(size * sizeof(char));
-    if (buffer == NULL)
-    {
-        ESP_LOGE("SD Card", "Failed to allocate memory");
-        return NULL;
-    }
-
-    int ch;
-    for (int i = 0; i < size; i++)
-    {
-        ch = fgetc(f);
-        buffer[i] = ch;
-        if (ch == EOF)
-        {
-            break;
-        }
-    }
-
-    fclose(f);
-    return buffer;
-}
-
-/**
- * @brief Get the size of a file.
- * source: GPT-4o request "how to get size of file?"
- */
-
-long get_file_size(const char *filename)
-{
-    char filepath[256];
-    snprintf(filepath, sizeof(filepath), "%s/%s", SDCARD_MOUNT_POINT, filename);
-
-    FILE *file = fopen(filepath, "r");
-    if (file == NULL)
-    {
-        ESP_LOGE(TAG, "Failed to open file for reading: %s", filepath);
-        return -1;
-    }
-
-    fseek(file, 0, SEEK_END);
-    long size = ftell(file);
-    fclose(file);
-
-    return size;
-}
-
-char *read_file(const char *filename)
-{
-    return read_data(filename, get_file_size(filename));
 }

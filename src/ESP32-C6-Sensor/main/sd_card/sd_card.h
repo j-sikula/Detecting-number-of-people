@@ -39,6 +39,11 @@
 
 #define MOUNT_POINT "/sdcard"
 
+/**
+ * @brief Initialize the SD card connected using SPI and SD card module HW-125.
+ * source: https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/sdmmc/main/sd_card_example_main.c
+ * @author Espressif under Apache license, modified by (c) 2025 Josef Sikula
+ */
 void init_sd_card();
 
 /**
@@ -52,17 +57,10 @@ void write_to_sd_card(const char *filename, const char *data);
  * @brief Save raw data to the SD card, line by line
  * @param filename - if no extension, adds .csv
  * @param measurement array of measurement_t
+ * @details After writing measurement, frees the memory (even it fails to open the file)
  */
 void save_raw_data(const char *filename, measurement_t *measurement);
 
-/**
- * https://www.geeksforgeeks.org/c-program-to-read-contents-of-whole-file/
- */
-char *read_data(const char *filename, int size);
 
-/**
- * @brief returns content of file
- */
-char *read_file(const char *filename);
 
 #endif // SD_CARD_H

@@ -27,8 +27,7 @@ typedef struct
 
 
 uint16_t _send_api_request(const char *url, esp_http_client_method_t method, char *data, int tx_buffer_size, const char *access_token);
-void get_google_sheets_data(const char *spreadsheet_id, const char *range);
-void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, const char *sheet_name, const char *access_token);
+
 
 /**
  * @brief Upload people count to Google Sheets
@@ -39,8 +38,19 @@ void append_google_sheets_data(const char *spreadsheet_id, measurement_t *data, 
  * @param access_token Google API access token
  */
 void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_count_t **data, uint8_t n_data, const char *sheet_name, const char *access_token);
+/**
+ * @brief Creates a new sheet in a Google Sheets spreadsheet
+ * @param spreadsheet_id Google Sheets spreadsheet ID
+ * @param sheet_name name of the created sheet
+ * @param access_token Google API access token
+ */
 void create_new_sheet(const char *spreadsheet_id, const char *sheet_name, const char *access_token);
-void update_google_sheets_data(const char *spreadsheet_id, const char *data, const char *range, const char *access_token);
+
+/**
+ * @brief Handler for HTTP events
+ * @param evt Pointer to the HTTP event structure
+ * @details Response of the HTTP reqest is stored in evt->user_data->buffer
+ */
 esp_err_t http_event_handler(esp_http_client_event_t *evt);
 
 #endif // GOOGLE_API_H

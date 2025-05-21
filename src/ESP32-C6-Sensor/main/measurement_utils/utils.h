@@ -53,17 +53,38 @@ void initialize_sntp(void);
  * structure of string: date_time;64x 4 digits depth; 64x 3 digits status;\n
  * @param measurement array - size MEASUREMENT_LOOP_COUNT
  * @return string containing all measurements
- * @note Need to free the memory after use
+ * @note Frees memory for timestamp, need to free the *measurement after use
  */
 char *measurement_array_to_string(measurement_t *measurement);
 
+/**
+ * @brief Prints to log current free heap size
+ * @note This function is used for debugging purposes
+ */
 void check_heap_memory();
 
+/**
+ * Initialize log file and set custom log function: int custom_log_to_file
+ * @param log_file_name - name of the log file
+ */
 void init_log_to_file(char *log_file_name);
 
+/**
+ * @brief Custom log function that writes logs to a file and console
+ */
 int custom_log_to_file(const char *fmt, va_list args);
 
+/**
+ * @brief Closes and opens log file to ensure that data writen from last close of the file are correctly saved
+ * @param log_file_name - name of the log file
+ * @return 0 - failed, 1 - success
+ */
 uint8_t refresh_log_file(char *log_file_name);
+
+/**
+ * @brief Closes the log file
+ * @return 0 - failed, 1 - success
+ */
 uint8_t close_log_file(void);
 
 #endif // UTILS_H

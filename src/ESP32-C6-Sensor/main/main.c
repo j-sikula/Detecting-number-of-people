@@ -1,9 +1,10 @@
-///
-/// @file main.c
-/// @brief Main file for the ESP32 application
-/// @details This file contains the main function, which starts the tasks for sensor control, Wi-Fi, SD card and resetting people count. Main function continues to LED indicator loop.
-/// @author Josef Sikula
-/// @license MIT
+/**
+ * @file main.c
+ * @brief Main file for the ESP32 application
+ * @details This file contains the main function, which starts the tasks for sensor control, Wi-Fi, SD card and resetting people count. Main function continues to LED indicator loop.
+ * @author Josef Sikula
+ * @license MIT
+ */
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -28,18 +29,25 @@ static char *google_api_access_token = NULL;
 
 static QueueHandle_t data_to_sd_queue;
 static QueueHandle_t data_to_google_sheets_queue;
-
-/// @brief Task for sensor control
-/// @details Initializes the sensor and starts continuous measurement.
+/**
+ * @brief Task for sensor control
+ * @details Initializes the sensor and starts continuous measurement.
+ */
 void vTaskLoop();
-/// @brief Task for Wi-Fi connection
-/// @details Connects to Wi-Fi and obtains time. Uploads data to Google Sheets.
+/**
+ * @brief Task for Wi-Fi connection and HTTPS requests
+ * @details Connects to Wi-Fi and obtains time. Uploads data to Google Sheets.
+ */
 void vTaskWifi();
-/// @brief Task for SD card
-/// @details Initializes the SD card and saves raw data from sensor and logs to it. Refreshes log file every 2 minutes.
+/**
+ * @brief Task for SD card
+ * @details Initializes the SD card and saves raw data from sensor and logs to it. Refreshes log file every 2 minutes.
+ */
 void vTaskSDCard();
-/// @brief Task for resetting people count
-/// @details Resets people count every day between 00:00 and 00:59.
+/**
+ * @brief Task for resetting people count
+ * @details Resets people count every day between 00:00 and 00:59.
+ */
 void vTaskResetPeopleCounter();
 
 void app_main(void)

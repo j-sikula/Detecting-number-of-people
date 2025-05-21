@@ -35,7 +35,7 @@ void initVL53L7CX();
 
 /**
  * @brief Start continuous measurement.
- * Starts the ranging and loops until the measurement is stopped.
+ * Starts the ranging and loops until the measurement is stopped (is_measuring == false).
  */
 void startContinuousMeasurement(QueueHandle_t data_to_sd_queue, QueueHandle_t data_to_google_sheets_queue);
 

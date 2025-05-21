@@ -24,6 +24,10 @@ char *exchange_jwt_for_access_token(const char *jwt);
  */
 char *generate_access_token();
 
+/**
+ * @brief Check if the access token is still valid, if expired generate a new one and stores it in the provided pointer
+ * @param access_token Pointer to the pointer to access token
+ */
 uint8_t checkAccessTokenValidity(char** access_token);
 
 #endif // AUTHENTICATION_H
