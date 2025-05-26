@@ -16,6 +16,7 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   PeopleCountHandler? peopleCountHandler;
   int? _selectedIndex = 0;
+  Future<List<FlSpot>>? _dataFuture;
 
   @override
   initState() {
@@ -25,6 +26,7 @@ class HomeScreenState extends State<HomeScreen> {
       log("Google Sheets API is not initialized");
       return;
     }
+    _dataFuture = _fetchData(_selectedIndex);
   }
 
   List<FlSpot> dataPoints = [];
@@ -40,7 +42,7 @@ class HomeScreenState extends State<HomeScreen> {
       return Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
                 margin: const EdgeInsets.all(10),
@@ -48,7 +50,12 @@ class HomeScreenState extends State<HomeScreen> {
                     initialSelection: _selectedIndex,
                     label: const Text('Data source'),
                     width: 180,
-                    onSelected: onSelectedIndex,
+                    onSelected: (int? newValue) async {
+                      setState(() {
+                        _selectedIndex = newValue;
+                        _dataFuture = _fetchData(newValue);
+                      });
+                    },
                     dropdownMenuEntries: const [
                       DropdownMenuEntry<int>(
                         value: 0,
@@ -76,31 +83,53 @@ class HomeScreenState extends State<HomeScreen> {
                   onPressed: onPressed, child: const Icon(Icons.refresh)),
             ],
           ),
-          PeopleCountGraph(dataPoints: dataPoints, width: width ?? 600),
+          // GitHub Copilot on request: change it to future builder to suite that future function, when loading, show progress indicator
+          FutureBuilder<List<FlSpot>>(
+            future: _dataFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(),
+                );
+              } else if (snapshot.hasError) {
+                log("Error fetching data: ${snapshot.error}");
+                return const Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: Text('Something went wrong, try again later.',
+                      style: TextStyle(fontSize: 18, color: Colors.red)),
+                );
+              } else {
+                final dataPoints = snapshot.data ?? [];
+                return PeopleCountGraph(
+                    dataPoints: dataPoints, width: width ?? 600);
+              }
+            },
+          ),
         ],
       );
     });
   }
 
-  void onPressed() async {
-    onSelectedIndex(_selectedIndex);
+  void onPressed() {
+    setState(() {
+      _dataFuture = _fetchData(_selectedIndex);
+    });
   }
 
-  void onSelectedIndex(int? newValue) async {
-    setState(() {
-      _selectedIndex = newValue;
-    });
-    List<FlSpot> data = [];
-    if (newValue == 0) {
-      data = fromListPeopleCount(await peopleCountHandler!.getPeopleCountData(
+  
+  Future<List<FlSpot>> _fetchData(int? index) async {
+    if (peopleCountHandler == null) return [];
+    if (index == 0) {
+      return fromListPeopleCount(await peopleCountHandler!.getPeopleCountData(
           DateTime.now().subtract(const Duration(hours: 1)), DateTime.now()));
-    } else if (newValue == 1) {
-      data = fromListPeopleCount(await peopleCountHandler!.getPeopleCountData(
+    } else if (index == 1) {
+      return fromListPeopleCount(await peopleCountHandler!.getPeopleCountData(
           DateTime.now().subtract(const Duration(days: 1)), DateTime.now()));
-    } else if (newValue == 2) {
-      data = fromListPeopleCount(await peopleCountHandler!.getPeopleCountData(
+    } else if (index == 2) {
+      return fromListPeopleCount(await peopleCountHandler!.getPeopleCountData(
           DateTime.now().subtract(const Duration(days: 7)), DateTime.now()));
-    } else if (newValue == 3) {
+    } else if (index == 3) {
       // Custom range
       final range = await showDateRangePicker(
         context: context,
@@ -108,13 +137,11 @@ class HomeScreenState extends State<HomeScreen> {
         lastDate: DateTime.now(),
       );
       if (range != null) {
-        data = fromListPeopleCount(await peopleCountHandler!
+        return fromListPeopleCount(await peopleCountHandler!
             .getPeopleCountData(range.start, range.end));
       }
     }
-    setState(() {
-      dataPoints = data;
-    });
+    return [];
   }
 }
 

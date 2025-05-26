@@ -9,6 +9,8 @@ const MAX_MOVEMENT_LENGTH = 4.3; // Maximum length of the movement in pixxels
 const MIN_LOCAL_MINIMUMS_DISTANCE = 4.0;
 const depthThreshold =
     1390; // Threshold for depth data to consider a person present
+/// Size of the depth data grid
+const depthDataGridSize = 8;
 
 class PeopleDetector {
   int peopleCount = 0; // Number of people in the room
@@ -21,20 +23,7 @@ class PeopleDetector {
   List<PersonMovement> peopleMovements = [];
   List<int> weightedData = List.filled(64, 0); // Weighted data
   List<int> cumsum = List.filled(64, 0); // Cumulative sum of depth data
-  final List<int> detectionGrid = // List.filled(25, 1); // Detection grid 5x5
-      /*    [0,0,1,0,0,
-   0,2,3,2,0,
-   1,3,5,3,1,
-   0,2,3,2,0,
-   0,0,1,0,0]; 
-
-    [1,1,1,1,1,
-   1,2,2,2,1,
-   1,2,2,2,1,
-   1,2,2,2,1,
-   1,1,1,1,1];
-*/
-      [1, 1, 1, 1, 2, 1, 1, 1, 1];
+  final List<int> detectionGrid = [1, 1, 1, 1, 2, 1, 1, 1, 1];
   int detectionGridSize = 3; // Size of the detection grid
 
   AlgorithmData processFrame(Measurement measurement) {
@@ -46,17 +35,17 @@ class PeopleDetector {
       }
 
       // eliminate the door
-      if ((i % 8 == 7 &&
+      if ((i % depthDataGridSize == 7 &&
               depthData[i] <= 147 &&
               depthData[i] >= 134 &&
               measurement.depthData[(i + 32) % 64] <= 147 &&
               measurement.depthData[(i + 32) % 64] >= 134) ||
-          (i % 8 == 6 &&
+          (i % depthDataGridSize == 6 &&
               depthData[i] <= 215 &&
               depthData[i] >= 190 &&
               measurement.depthData[(i + 32) % 64] <= 215 &&
               measurement.depthData[(i + 32) % 64] >= 190) ||
-          (i % 8 == 5 &&
+          (i % depthDataGridSize == 5 &&
               depthData[i] <= 340 &&
               depthData[i] >= 280 &&
               measurement.depthData[(i + 32) % 64] <= 340 &&
@@ -68,7 +57,7 @@ class PeopleDetector {
       int nWeightedCells = 0; // Number of weighted cells
       for (int j = 0; j < detectionGrid.length; j++) {
         int index = i +
-            (8 * (j ~/ detectionGridSize) +
+            (depthDataGridSize * (j ~/ detectionGridSize) +
                 j % detectionGridSize -
                 (detectionGridSize - 1) ~/
                     2 *
@@ -76,8 +65,8 @@ class PeopleDetector {
         // Check if the index is within bounds and in the same row (overflow is handled)
         if (index >= 0 &&
             index < 64 &&
-            index ~/ 8 ==
-                i ~/ 8 -
+            index ~/ depthDataGridSize ==
+                i ~/ depthDataGridSize -
                     (detectionGridSize - 1) ~/ 2 +
                     j ~/ detectionGridSize) {
           weightedData[i] += depthData[index] * detectionGrid[j];
@@ -128,7 +117,9 @@ class PeopleDetector {
   }
 
   List<int> countPeople(List<int> indexesOfLocalMinimums) {
-    if (indexesOfLocalMinimums.isEmpty && peopleMovements.isNotEmpty && peopleMovements[0].deleteMovement) {
+    if (indexesOfLocalMinimums.isEmpty &&
+        peopleMovements.isNotEmpty &&
+        peopleMovements[0].deleteMovement) {
       // No people present, clear the list
       peopleMovements.clear();
       return [];
@@ -151,8 +142,9 @@ class PeopleDetector {
     List<int> indexesOfPresentPeople =
         []; // List to store indexes of present people
 
-    for (int i = 0; i < peopleMovements.length; i++) {	
-      int destinationIndex = findLocalMinimum(peopleMovements[i].currentPosition);
+    for (int i = 0; i < peopleMovements.length; i++) {
+      int destinationIndex =
+          findLocalMinimum(peopleMovements[i].currentPosition);
       if (getDistance(destinationIndex, peopleMovements[i].currentPosition) >
           MAX_MOVEMENT_LENGTH) {
         // If the distance is too big, remove the person from the list
@@ -215,7 +207,7 @@ class PeopleDetector {
             for (int j = 0; j < peopleMovements.length; j++) {
               minDistance = getDistance(peopleMovements[j].currentPosition,
                   indexesOfLocalMinimums[i]);
-            
+
               if (minDistance >= MIN_LOCAL_MINIMUMS_DISTANCE) {
                 peopleMovements.add(PersonMovement(indexesOfLocalMinimums[i]));
                 indexesOfPresentPeople.add(indexesOfLocalMinimums[
@@ -248,41 +240,35 @@ class PeopleDetector {
 
   /// Checks if the index is on the border of the grid, where the person can enter or exit.
   bool isBorderIndex(int index) {
-    int x = index % 8; // Column index
-    int y = index ~/ 8; // Row index
-    /*// Check if the index is on the border of the grid
-    return x != 3 &&
-        x != 4 &&
-        (x == 0 ||
-            x == 7 ||
-            y == 0 ||
-            y == 7); // 0-7 are the indexes of the grid*/
-    return index % 8 < 2 ||
-        index % 8 > 5 ||
+    int x = index % depthDataGridSize; // Column index
+    int y = index ~/ depthDataGridSize; // Row index
+    
+    return index % depthDataGridSize < 2 ||
+        index % depthDataGridSize > 5 ||
         ((x == 2 || x == 5) && (y == 0 || y == 7));
   }
 
   bool isExitBorderIndex(int index) {
-    return index % 8 <=
+    return index % depthDataGridSize <=
         3; // Check if the index is on the left border of the grid
   }
 
   /// Calculates the distance between two indexes in the grid.
   double getDistance(int index1, int index2) {
-    int x1 = index1 % 8;
-    int y1 = index1 ~/ 8;
-    int x2 = index2 % 8;
-    int y2 = index2 ~/ 8;
+    int x1 = index1 % depthDataGridSize;
+    int y1 = index1 ~/ depthDataGridSize;
+    int x2 = index2 % depthDataGridSize;
+    int y2 = index2 ~/ depthDataGridSize;
     return sqrt(pow((x1 - x2), 2) + pow((y1 - y2), 2)); // Euclidean distance
   }
 
   /// Finds the index of the local minimum in the weightedData List concerned as a 8x8 grid
-  /// Algorithm: gradient descent
+  
   int findLocalMinimum(int startIndex) {
     bool localMinimumFound = false; // Flag to check if local minimum is found
     while (!localMinimumFound) {
-      int indexX = startIndex % 8; // Column index
-      int indexY = startIndex ~/ 8; // Row index
+      int indexX = startIndex % depthDataGridSize; // Column index
+      int indexY = startIndex ~/ depthDataGridSize; // Row index
       localMinimumFound = true; // Set the flag to true
       int localMinimum = startIndex; // Local minimum value
       for (int i = -1; i <= 1; i++) {
@@ -291,10 +277,10 @@ class PeopleDetector {
           int neighborX = indexX + j;
           int neighborY = indexY + i;
           if (neighborX >= 0 &&
-              neighborX < 8 &&
+              neighborX < depthDataGridSize &&
               neighborY >= 0 &&
-              neighborY < 8) {
-            int neighborIndex = neighborY * 8 + neighborX;
+              neighborY < depthDataGridSize) {
+            int neighborIndex = neighborY * depthDataGridSize + neighborX;
             if (weightedData[neighborIndex] < weightedData[localMinimum]) {
               localMinimum =
                   neighborIndex; // Update the index of the probable local minimum
@@ -318,8 +304,8 @@ class PeopleDetector {
     List<int> localMinimums = [];
 
     if (data.length == 64) {
-      for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
+      for (int i = 0; i < depthDataGridSize; i++) {
+        for (int j = 0; j < depthDataGridSize; j++) {
           bool isLocalMinimum = true;
           for (int k = -1; k <= 1; k++) {
             for (int l = -1; l <= 1; l++) {
@@ -327,11 +313,11 @@ class PeopleDetector {
               int neighborX = j + l;
               int neighborY = i + k;
               if (neighborX >= 0 &&
-                  neighborX < 8 &&
+                  neighborX < depthDataGridSize &&
                   neighborY >= 0 &&
-                  neighborY < 8) {
-                int neighborIndex = neighborY * 8 + neighborX;
-                if (data[neighborIndex] < data[i * 8 + j]) {
+                  neighborY < depthDataGridSize) {
+                int neighborIndex = neighborY * depthDataGridSize + neighborX;
+                if (data[neighborIndex] < data[i * depthDataGridSize + j]) {
                   isLocalMinimum = false;
                   break;
                 }
@@ -340,7 +326,8 @@ class PeopleDetector {
             if (!isLocalMinimum) break;
           }
           if (isLocalMinimum) {
-            localMinimums.add(i * 8 + j); // Add the index of the local minimum
+            localMinimums.add(i * depthDataGridSize +
+                j); // Add the index of the local minimum
           }
         }
       }
@@ -350,13 +337,13 @@ class PeopleDetector {
   }
 
   List<int> getSquareMatrix(int startIndex, int size) {
-    if (startIndex % 8 + size > 8) {
+    if (startIndex % depthDataGridSize + size > depthDataGridSize) {
       return []; // Invalid square matrix size
     }
     List<int> squareMatrix = List.filled(size * size, 0);
     for (int i = 0; i < size; i++) {
       for (int j = 0; j < size; j++) {
-        int index = startIndex + i * 8 + j;
+        int index = startIndex + i * depthDataGridSize + j;
         if (index >= 0 && index < 64) {
           squareMatrix[i * size + j] = index;
         }
@@ -416,14 +403,15 @@ class PersonMovement {
   int currentPosition; // index of the current position
   bool startedExiting;
   bool updatedPosition = true; // Flag to check if the position is updated
-  bool deleteMovement = false; // Flag to check if the measurement should be deleted in next frame
+  bool deleteMovement =
+      false; // Flag to check if the measurement should be deleted in next frame
   PersonMovement(this.startPosition)
       : currentPosition = startPosition,
-        startedExiting =
-            startPosition % 8 <= 3; // Person starts exiting the grid
+        startedExiting = startPosition % depthDataGridSize <=
+            3; // Person starts exiting the grid
 
   int getColumn() {
-    return currentPosition % 8; // Column index
+    return currentPosition % depthDataGridSize; // Column index
   }
 
   void updatePosition(int newPosition) {

@@ -4,6 +4,7 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:intl/intl.dart';
+import 'package:sensor_gui/control/people_count_handler.dart';
 import 'package:sensor_gui/control/people_counter.dart';
 
 class GoogleSheetsApi {
@@ -42,7 +43,7 @@ class GoogleSheetsApi {
     }
 
     // Prepare the sheet for the day if it does not exist
-    bool isSheetPrepared = await createSheetIfNotExists(getCurrentDate()); 
+    bool isSheetPrepared = await createSheetIfNotExists(getCurrentWeek()); 
 
     if (!isSheetPrepared) {
       log('Failed to prepare the sheet');
@@ -50,7 +51,7 @@ class GoogleSheetsApi {
     }
 
     // Update last upload time
-    String range = '${getCurrentDate()}!C1';
+    String range = '${getCurrentWeek()}!C1';
 
     // Define the values to upload
     final values = [
@@ -69,7 +70,7 @@ class GoogleSheetsApi {
 
       log('Last upload time updated successfully');
 
-      range = getCurrentDate(); // sheet name
+      range = getCurrentWeek(); // sheet name
 
       valueRange = ValueRange.fromJson({
         'range': range,
@@ -120,8 +121,6 @@ class GoogleSheetsApi {
         await sheetsApi!.spreadsheets
             .batchUpdate(batchUpdateRequest, spreadsheetId);
         log('Sheet "$sheetTitle" created successfully');
-
-        await prepareHeader(sheetTitle);
       } else {
         return true;
       }
@@ -165,64 +164,13 @@ class GoogleSheetsApi {
   }
 
   
-  /// inserts the header to the sheet
-  /// throws an error if the header is not prepared
-  Future<void> prepareHeader(String sheetName) {
-    if (sheetsApi == null) {
-      log('Google Sheets API is not initialized');
-      return Future.value();
-    }
-
-    String range = '$sheetName!A1';
-
-    // Define the values to upload
-    final values = [
-      ['Data measured on VL53L7CX', 'Last Upload'],
-    ];
-
-    // Create the value range
-    ValueRange valueRange = ValueRange.fromJson({
-      'range': range,
-      'values': values,
-    });
-
-    // Upload the data
-    sheetsApi!.spreadsheets.values
-        .update(valueRange, spreadsheetId, range, valueInputOption: 'RAW');
-
-    log('Last upload time updated successfully');
-
-    final headerRangeSecond = '$sheetName!A2';
-    List<String> zonesHeaders;
-    if (isSheetForRawData) {
-      zonesHeaders = List.generate(64, (index) => 'Zone $index');
-      zonesHeaders.insert(0, 'UTC time');
-    } else {
-      zonesHeaders = ["Local time of change","People count"];
-    }
-    final headerValuesSecond = [
-      [...zonesHeaders], // UTC time and zone headers or label people count
-    ];
-
-    final headerValueRangeSecond = ValueRange.fromJson({
-      'range': headerRangeSecond,
-      'values': headerValuesSecond,
-    });
-
-    return sheetsApi!.spreadsheets.values.update(
-      headerValueRangeSecond,
-      spreadsheetId,
-      headerRangeSecond,
-      valueInputOption: 'RAW',
-    );
-  }
+  
 
   /// Returns the current date in the format 'year_month_day'
   /// used for sheet names
-  String getCurrentDate() {
+  String getCurrentWeek() {
     String year = DateTime.now().year.toString();
-    String month = DateTime.now().month.toString();
-    String day = DateTime.now().day.toString();
-    return '${year}_${month}_$day';
+    String week = DateTime.now().weekOfYear.toString();
+    return ("$year-W$week");
   }
 }

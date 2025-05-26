@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sensor_gui/measured_data_visualiser/measured_data_visualiser_screen.dart';
 import 'package:sensor_gui/resullts_visualiser/home_screen.dart';
-import 'package:sensor_gui/sensor_data_visualiser/sensor_data_visualiser_screen.dart';
+import 'package:sensor_gui/usb_serial_data_visualiser/sensor_data_visualiser_screen.dart';
 
 class NavigationMainScreen extends StatefulWidget {
   const NavigationMainScreen({super.key});
@@ -55,7 +55,7 @@ class _NavigationMainScreenState extends State<NavigationMainScreen> {
                     : constraints.maxWidth - 120,
                 child: <Widget>[
                   const HomeScreen(),
-                  const SensorDataVisualiserScreen(),
+                  const USBSerialDataVisualiserScreen(),
                   const MeasuredDataVisualiserScreen(),
                 ][currentPageIndex],
               ),

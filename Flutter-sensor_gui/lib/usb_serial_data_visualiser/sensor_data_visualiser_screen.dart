@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sensor_gui/sensor_data_visualiser/serial_port_selector.dart';
+import 'package:sensor_gui/usb_serial_data_visualiser/serial_port_selector.dart';
 
-class SensorDataVisualiserScreen extends StatelessWidget {
-  const SensorDataVisualiserScreen({super.key});
+class USBSerialDataVisualiserScreen extends StatelessWidget {
+  const USBSerialDataVisualiserScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

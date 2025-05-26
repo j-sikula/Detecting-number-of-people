@@ -33,6 +33,13 @@ class PeopleCounter {
     }
     List<int> heightData = List.generate(background.length,
         (index) => background[index] - measurement.depthData[index]);
+    
+    // Set the height to 0 if the status is 255 (no target detected == floor)
+    for (int i = 0; i < heightData.length; i++) {
+      if (measurement.statuses[i] == 255) {
+        heightData[i] = 0;
+      }
+    }
 
     for (int i = 0; i < nZones; i++) {
       int nPixelsAboveThreshold = 0;

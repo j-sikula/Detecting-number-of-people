@@ -7,7 +7,7 @@ import 'package:sensor_gui/control/data_decoder.dart';
 import 'package:sensor_gui/control/serial_port_handler.dart';
 import 'package:sensor_gui/control/serial_port_handler_android.dart';
 import 'package:sensor_gui/control/serial_port_handler_windows.dart';
-import 'package:sensor_gui/sensor_data_visualiser/sensor_data_visualiser.dart';
+import 'package:sensor_gui/usb_serial_data_visualiser/sensor_data_visualiser.dart';
 //import 'package:sensor_gui/serial_monitor.dart';
 
 /// SerialPortSelector widget

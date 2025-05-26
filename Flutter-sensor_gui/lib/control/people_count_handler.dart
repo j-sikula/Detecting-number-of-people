@@ -18,6 +18,8 @@ class PeopleCountHandler {
     apiPeopleCounter!.initGoogleAPI();
   }
 
+  /// Fetches people count data since the specified date.
+  /// Returns a list of [PeopleCount] objects.
   Future<List<PeopleCount>> getPeopleCountDataSince(DateTime dataSince) async {
     if (apiPeopleCounter == null) {
       log("Google Sheets API is not initialized");
@@ -41,6 +43,8 @@ class PeopleCountHandler {
     return peopleCountData;
   }
 
+  /// Fetches people count data between the specified dates.
+  /// Returns a list of [PeopleCount] objects filtered by the date range.
   Future<List<PeopleCount>> getPeopleCountData(
       DateTime dateFrom, DateTime dateUntil) async {
     peopleCountData = await getPeopleCountDataSince(dateFrom);
@@ -51,10 +55,19 @@ class PeopleCountHandler {
         filteredData.add(data);
       }
     }
+    if (filteredData.isEmpty) {
+      return [];
+    }
+
+    if (filteredData.last.timestamp.isBefore(dateUntil)) {
+      // If the last data point is before the end date, add a PeopleCount with current date and last count
+      filteredData.add(PeopleCount(dateUntil, filteredData.last.count)); // Assuming count 0 for the end date
+    }
     return filteredData;
   }
 }
 
+/// Returns a list of week strings in the format "YYYY-WW" (for example 2025-W21)
 List<String> getWeeksSince(DateTime date) {
   List<String> weeks = [];
   DateTime currentDate = DateTime.now();
@@ -63,10 +76,13 @@ List<String> getWeeksSince(DateTime date) {
     weeks.add("${date.year}-W$weekNumber");
     date = date.add(const Duration(days: 7));
   }
+  if (currentDate.weekOfYear.toString() != weeks.last.split('-W')[1]) { // Check if the current week is already added
+    weeks.add("${currentDate.year}-W${currentDate.weekOfYear}");
+  }
   return weeks;
 }
 
-// https://nonimi-ink.medium.com/calculating-iso-week-numbers-in-dart-7e3891e668c
+/// https://nonimi-ink.medium.com/calculating-iso-week-numbers-in-dart-7e3891e668c
 extension DateTimeExtension on DateTime {
   int get weekOfYear {
     final startOfYear = DateTime(year, 1, 1);
