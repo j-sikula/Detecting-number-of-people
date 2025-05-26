@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
@@ -14,20 +13,12 @@ class DataDecoder {
   String previousData = '';
   List<Measurement> measurements = []; // List of non backed-up measurements
   List<Measurement> allMeasurements = []; // List of all measurements
-  GoogleSheetsApi apiRawDataCloud =
-      GoogleSheetsApi('1TzPddcXQPqZVjk_19nel91hl8BTlgOg8bBRZ543iEuM', true);
   GoogleSheetsApi apiPeopleCounter =
-      GoogleSheetsApi('1SMUomRFOupgDCK7eLoi8eb6Y_97LJ3NA8j68mztiyTw', false);
+      GoogleSheetsApi('1SMUomRFOupgDCK7eLoi8eb6Y_97LJ3NA8j68mztiyTw');
   late PeopleCounter peopleCounter;
+
+
   DataDecoder() {
-    apiRawDataCloud.initGoogleAPI();
-    Timer.periodic(const Duration(seconds: 10), (timer) {
-      if (measurements.isNotEmpty) {
-        measurements.clear();
-        allMeasurements.clear();
-        //uploadDataToGoogleSheets();
-      }
-    });
     apiPeopleCounter.initGoogleAPI();
     peopleCounter = PeopleCounter(apiPeopleCounter);
   }
@@ -105,8 +96,6 @@ class DataDecoder {
     return null;
   }
 
-  
-
   /// Saves the measured data to a file at [path]
   /// The first row contains the header
   /// After saving the data, the measured data is cleared
@@ -126,12 +115,18 @@ class DataDecoder {
       for (var i = 0; i < 64; i++) {
         sink.write('Zone $i;');
       }
+      for (var i = 0; i < 64; i++) {
+        sink.write('Status $i;');
+      }
       sink.write('\n');
       // Write the data to the file
       for (var measurement in allMeasurements) {
         sink.write('${measurement.time.toIso8601String()};');
-        for (var data in measurement.depthData) {
-          sink.write('$data;');
+        for (int i = 0; i < measurement.depthData.length; i++) {
+          sink.write('${measurement.depthData[i]};');
+        }
+        for (int i = 0; i < measurement.statuses.length; i++) {
+          sink.write('${measurement.statuses[i]};');
         }
         sink.write('\n');
       }
@@ -142,20 +137,6 @@ class DataDecoder {
     } catch (e) {
       log('Failed to save data to file: $e');
     }
-  }
-
-  void uploadDataToGoogleSheets() {
-    List<List<String>> parsedMeasurements = []; // all data to be uploaded
-    for (Measurement measurement in measurements) {
-      List<String> parsedMeasurement = []; // one row of data
-      parsedMeasurement.add(measurement.time.toIso8601String());
-      parsedMeasurement
-          .addAll(measurement.depthData.map((e) => e.toString()).toList());
-      parsedMeasurements.add(parsedMeasurement);
-    }
-
-    apiRawDataCloud.appendData(parsedMeasurements);
-    measurements.clear();
   }
 
   Measurement? getLatestMeasurement() {
@@ -170,24 +151,25 @@ class DataDecoder {
 
 /// Reads the measurements from a file
 List<Measurement> readMeasurementsFromFile(File fileRawData) {
-    List<Measurement> measurements = [];
-    List<String> lines = fileRawData.readAsLinesSync();
-    for (String line in lines) {
-      try {
-        List<String> parts = line.split(';');
-        if (parts.length > 1) {
-          DateTime time = DateFormat("yyyy-MM-dd HH:mm:ss,SSS").parse(parts[0], true).toLocal();    //converts UTC time in given format to Local time  
-          List<int> depthData = parts.sublist(1, 65).map(int.parse).toList();
-          List<int> statuses = parts.sublist(65).map(int.parse).toList();
-          measurements.add(Measurement(depthData, time, statuses));
-        }
-      } catch (e) {
-        log('Failed to parse line: $line, error: $e');
+  List<Measurement> measurements = [];
+  List<String> lines = fileRawData.readAsLinesSync();
+  for (String line in lines) {
+    try {
+      List<String> parts = line.split(';');
+      if (parts.length > 1) {
+        DateTime time = DateFormat("yyyy-MM-dd HH:mm:ss,SSS")
+            .parse(parts[0], true)
+            .toLocal(); //converts UTC time in given format to Local time
+        List<int> depthData = parts.sublist(1, 65).map(int.parse).toList();
+        List<int> statuses = parts.sublist(65).map(int.parse).toList();
+        measurements.add(Measurement(depthData, time, statuses));
       }
+    } catch (e) {
+      log('Failed to parse line: $line, error: $e');
     }
-    return measurements;
   }
-
+  return measurements;
+}
 
 /// Represents a measurement
 class Measurement {

@@ -127,6 +127,7 @@ class PeopleCountGraph extends StatelessWidget {
     );
   }
 
+  /// Returns the interval in ms for the x-axis based on the total xInterval.
   double getInterval() {
     const List<double> intervals = [
       1000, // 1 second
@@ -147,15 +148,16 @@ class PeopleCountGraph extends StatelessWidget {
       43200000, // 12 hours
       86400000, // 1 day
     ];
-
+    int maxIntervals = (width * 0.01807 - 2.843)
+        .toInt(); // Calculate maximum intervals (2-8) based on width (268-600)
     // Find the largest interval that results in 2 to 8 subintervals
     for (double interval in intervals) {
-      if (xInterval / interval >= 2 && xInterval / interval <= 8) {
+      if (xInterval / interval >= 2 && xInterval / interval <= maxIntervals) {
         return interval;
       }
     }
 
     // Default to splitting the interval into 5 equal parts if no suitable interval is found
-    return xInterval / 5;
+    return xInterval / maxIntervals;
   }
 }

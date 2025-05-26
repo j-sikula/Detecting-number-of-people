@@ -58,7 +58,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
     return [];
   }
 
-  /// Callback function to open and close the selected port
+  /// Callback function to open or close the selected port
   void onPressedOpenAndClosePort() async {
     if (_selectedPort != null) {
       if (serialPortHandler == null ||
@@ -160,7 +160,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
               child: const Text('Save to File'),
             ),
             ElevatedButton(
-              onPressed: onBtnSetSurfacePressed,
+              onPressed: onBtnSetBackgroundPressed,
               child: const Text('Set Background'),
             ),
           ],
@@ -193,11 +193,11 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
     setAvailablePorts();
   }
 
-  void onBtnSetSurfacePressed() {
+  void onBtnSetBackgroundPressed() {
     Measurement? lastMeasurement =
         serialPortHandler?.decoder.getLatestMeasurement();
     if (lastMeasurement != null) {
-      serialPortHandler?.decoder.peopleCounter.setSurface(lastMeasurement);
+      serialPortHandler?.decoder.peopleCounter.setBackground(lastMeasurement);
     }
   }
 }

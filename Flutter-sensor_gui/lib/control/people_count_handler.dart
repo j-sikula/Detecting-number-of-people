@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:sensor_gui/control/google_sheets_api.dart';
 
@@ -10,7 +11,7 @@ class PeopleCountHandler {
   List<PeopleCount>? peopleCountData;
 
   PeopleCountHandler() {
-    apiPeopleCounter = GoogleSheetsApi(spreadsheetID, false);
+    apiPeopleCounter = GoogleSheetsApi(spreadsheetID);
     if (apiPeopleCounter == null) {
       log("Google Sheets API is not initialized");
       return;
@@ -81,6 +82,32 @@ List<String> getWeeksSince(DateTime date) {
   }
   return weeks;
 }
+
+ /// Saves the people count history to a file in CSV format at [path].
+  void savePeopleCountHistory(String path, List<PeopleCount> peopleCountHistory) async {
+    if (path.contains('.') == false) {
+      // Checks if the path contains the file extension
+      path = '$path.csv'; // Adds the file extension csv if not present
+    }
+
+    final file = File(path);
+    try {
+      final sink = file.openWrite();
+      sink.write('Time;People Count\n');
+
+      // Write the data to the file
+      for (PeopleCount count in peopleCountHistory) {
+        sink.write('${count.timestamp.toIso8601String()};${count.count}\n');
+      }
+      await sink.flush();
+      await sink.close();
+      peopleCountHistory.clear(); // Clear the history after saving
+
+      log('Data saved to file successfully');
+    } catch (e) {
+      log('Failed to save data to file: $e');
+    }
+  }
 
 /// https://nonimi-ink.medium.com/calculating-iso-week-numbers-in-dart-7e3891e668c
 extension DateTimeExtension on DateTime {

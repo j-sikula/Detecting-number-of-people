@@ -24,9 +24,7 @@ class SerialPortHandlerWindows extends SerialPortHandler {
       log('Port opened successfully');
       reader = SerialPortReader(serialPort!);
 
-      receivedData = reader!.stream.map((data) {
-        return String.fromCharCodes(data);
-      });
+      
 
       decodedDataStream = reader!.stream.map((data) {
         return decoder.decode(data); // Decode the received data return the Measurement? object

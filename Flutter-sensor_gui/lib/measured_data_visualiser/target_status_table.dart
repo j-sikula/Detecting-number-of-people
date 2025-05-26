@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// A widget that displays a table with target status codes and their descriptions.
 class TargetStatusTable extends StatelessWidget {
   const TargetStatusTable({super.key});
 

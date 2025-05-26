@@ -10,9 +10,9 @@ class GridAlgorithmDataWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(child: Text(
+        Text(
           data.textToDisplay,
-        ),),
+        ),
         SizedBox(
           width: 400,
           height: 400,

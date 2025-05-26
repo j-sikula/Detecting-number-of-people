@@ -5,6 +5,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:sensor_gui/control/data_decoder.dart';
+import 'package:sensor_gui/control/people_count_handler.dart';
+import 'package:sensor_gui/control/people_counter.dart';
 import 'package:sensor_gui/control/people_detector.dart';
 import 'package:sensor_gui/measured_data_visualiser/grid_algorithm_data_widget.dart';
 import 'package:sensor_gui/measured_data_visualiser/grid_data_widget.dart';
@@ -26,15 +28,50 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
   int indexOfMeasurement = 0; // Index of the measurement to be displayed
   bool showTargetStatuses = false; // Show target statuses
   bool isFileLoading = false;
-  PeopleDetector peopleDetector = PeopleDetector();
+  int algorithm =
+      0; // Algorithm index 0 - xcorrelation algorithm, 1 - zones of matrix
+  PeopleDetector peopleDetector =
+      PeopleDetector(); // Local minimums of correlation matrix algorithm
+  PeopleCounter peopleCounter = PeopleCounter(null); // Zone of Matrix algorithm
   AlgorithmData dataAlgorithmGrid = AlgorithmData(
     dataGrid: List<int>.filled(64, 0),
     textToDisplay: "No data",
   );
+  AlgorithmData heightDataAlgorithmGrid = AlgorithmData(
+    dataGrid: List<int>.filled(64, 0),
+    textToDisplay: "No data",
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    peopleCounter.setBackgroundFromList(List<int>.filled(64, 2100));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            DropdownMenu<int>(
+              initialSelection: algorithm,
+              label: const Text("Algorithm"),
+              dropdownMenuEntries: const [
+                DropdownMenuEntry(value: 0, label: "X-Correlation"),
+                DropdownMenuEntry(value: 1, label: "Zones of Matrix"),
+              ],
+              onSelected: (int? newValue) {
+                setState(() {
+                  algorithm = newValue ?? 0;
+                });
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
@@ -53,6 +90,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
             ),
           ],
         ),
+        const SizedBox(height: 10),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -126,7 +164,8 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
             ],
           ),
         ),
-        GridAlgorithmDataWidget(data: dataAlgorithmGrid)
+        GridAlgorithmDataWidget(
+            data: algorithm == 0 ? dataAlgorithmGrid : heightDataAlgorithmGrid),
       ],
     );
   }
@@ -157,12 +196,22 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
       });
       peopleDetector.resetPeopleCounter();
       for (var mes in measurement) {
-        peopleDetector.processFrame(mes); // Process all measurements
+        if (algorithm == 0) {
+          peopleDetector.processFrame(mes); // Process all measurements
+        } else if (algorithm == 1) {
+          peopleCounter.processMeasurement(mes);
+        }
       }
 
       String? pathProcessedData = await FilePicker.platform.saveFile();
       if (pathProcessedData != null) {
-        peopleDetector.savePeopleCountHistory(pathProcessedData);
+        if (algorithm == 0) {
+          savePeopleCountHistory(
+              pathProcessedData, peopleDetector.peopleCountHistory);
+        } else if (algorithm == 1) {
+          savePeopleCountHistory(
+              pathProcessedData, peopleCounter.peopleCountHistory);
+        }
       }
     }
 
@@ -185,8 +234,15 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
       } else if (indexOfMeasurement >= measurement.length) {
         indexOfMeasurement = measurement.length - 1;
       }
-      dataAlgorithmGrid = peopleDetector.processFrame(
-          measurement[indexOfMeasurement]); // Process the current measurement
+      if (algorithm == 0) {
+        dataAlgorithmGrid = peopleDetector.processFrame(
+            measurement[indexOfMeasurement]); // Process the current measurement
+      } else if (algorithm == 1) {
+        heightDataAlgorithmGrid = AlgorithmData(
+            dataGrid: peopleCounter
+                .processMeasurement(measurement[indexOfMeasurement]),
+            textToDisplay: "Height data");
+      }
     });
   }
 }

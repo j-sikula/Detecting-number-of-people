@@ -10,7 +10,7 @@ class SerialPortHandler {
   bool tryOpenPortOnceAgain =
       true; // unsucessful opening, after closing port, try to open it only once again
   SerialPort? serialPort;
-  Stream<String>? receivedData;
+  /// Stream with decoded measurements from serial port
   Stream<Measurement?>? decodedDataStream;
   List<Measurement> measuredData = [];
   // DataDecoder used for saving file and decoding received data

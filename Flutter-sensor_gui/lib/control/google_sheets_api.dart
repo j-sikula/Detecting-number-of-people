@@ -10,9 +10,7 @@ import 'package:sensor_gui/control/people_counter.dart';
 class GoogleSheetsApi {
   SheetsApi? sheetsApi;
   final String spreadsheetId;
-  bool
-      isSheetForRawData; // sheet for raw data has different header (65 columns)
-  GoogleSheetsApi(this.spreadsheetId, this.isSheetForRawData);
+  GoogleSheetsApi(this.spreadsheetId);
 
   void initGoogleAPI() async {
     final credentialsJson =

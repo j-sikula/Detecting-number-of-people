@@ -84,10 +84,7 @@ class SerialPortHandlerAndroid extends SerialPortHandler {
       return decoder.decode(data); // Decode the received data, return the Measurement? object
     });
 
-    receivedData = usbPort!.inputStream!.map((data) {
-      return String.fromCharCodes(data);
-    });
-
+   
     log('Port opened successfully');
     isPortOpen = true;
     return true;

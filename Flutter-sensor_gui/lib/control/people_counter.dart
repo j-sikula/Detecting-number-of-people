@@ -6,11 +6,11 @@ import 'package:sensor_gui/control/data_decoder.dart';
 import 'package:sensor_gui/control/google_sheets_api.dart';
 
 class PeopleCounter {
-  final GoogleSheetsApi apiPeopleCounter;
+  final GoogleSheetsApi? apiPeopleCounter;
   int lastPosition = 0;
   int peopleCount = 0;
   final int heightThreshold = 1000;
-
+  List<PeopleCount> peopleCountHistory = [];
   /// Number of pixels that must be higer than the threshold
   final int nPixelsToActivateZone = 5;
   static const int nZones = 4;
@@ -33,11 +33,11 @@ class PeopleCounter {
     }
     List<int> heightData = List.generate(background.length,
         (index) => background[index] - measurement.depthData[index]);
-    
+
     // Set the height to 0 if the status is 255 (no target detected == floor)
     for (int i = 0; i < heightData.length; i++) {
       if (measurement.statuses[i] == 255) {
-        heightData[i] = 0;
+       heightData[i] = 0;
       }
     }
 
@@ -67,15 +67,22 @@ class PeopleCounter {
             peopleCount--;
             peopleCountNotifier.value = peopleCount;
             log('People count decremented: $peopleCount people');
-            apiPeopleCounter.appendDataRow(
-                [DateTime.now().toIso8601String(), peopleCount.toString()]);
+            peopleCountHistory.add(PeopleCount(measurement.time, peopleCount));
+            if (apiPeopleCounter != null) {
+              apiPeopleCounter!.appendDataRow(
+                  [measurement.time.toIso8601String(), peopleCount.toString()]);
+            }
           }
           if (positionEntered == nZones - 1) {
             peopleCount++;
             peopleCountNotifier.value = peopleCount;
             log('People count incremented: $peopleCount people');
-            apiPeopleCounter.appendDataRow(
-                [DateTime.now().toIso8601String(), peopleCount.toString()]);
+            peopleCountHistory.add(PeopleCount(measurement.time, peopleCount));
+            if (apiPeopleCounter != null) {
+              // Append the data to the Google Sheets API
+              apiPeopleCounter!.appendDataRow(
+                  [measurement.time.toIso8601String(), peopleCount.toString()]);
+            }
           }
           positionEntered = null;
           zoneEntered = List.filled(nZones, false);
@@ -94,8 +101,16 @@ class PeopleCounter {
     return heightData;
   }
 
-  void setSurface(Measurement measurement) {
+  void setBackground(Measurement measurement) {
     background = measurement.depthData;
+  }
+
+  void setBackgroundFromList(List<int> background) {
+    if (background.length != 64) {
+      log('Background data must have 64 elements');
+      return;
+    }
+    this.background = background;
   }
 }
 
@@ -121,7 +136,6 @@ class LocalMaximum {
     return position * nZones ~/ 64;
   }
 }
-
 
 class PeopleCount {
   int count;

@@ -1,17 +1,19 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:sensor_gui/control/data_decoder.dart';
 import 'dart:math';
 import 'dart:developer' as dev;
 
-const MAX_MOVEMENT_LENGTH = 4.3; // Maximum length of the movement in pixxels
-const MIN_LOCAL_MINIMUMS_DISTANCE = 4.0;
+import 'package:sensor_gui/control/people_counter.dart';
+
+const maxMovementLength = 4.3; // Maximum length of the movement in pixxels
+const minLocalMinimumsDistance = 4.0;
 const depthThreshold =
     1390; // Threshold for depth data to consider a person present
 /// Size of the depth data grid
 const depthDataGridSize = 8;
 
+/// class for algorithm based on local minimums of the correlation matrix
 class PeopleDetector {
   int peopleCount = 0; // Number of people in the room
   List<PeopleCount> peopleCountHistory = []; // History of people count
@@ -26,6 +28,7 @@ class PeopleDetector {
   final List<int> detectionGrid = [1, 1, 1, 1, 2, 1, 1, 1, 1];
   int detectionGridSize = 3; // Size of the detection grid
 
+  /// Performs algorithm based on local minimums of the correlation matrix
   AlgorithmData processFrame(Measurement measurement) {
     List<int> depthData = List.from(measurement.depthData);
     for (int i = 0; i < depthData.length; i++) {
@@ -116,6 +119,9 @@ class PeopleDetector {
     return toReturn;
   }
 
+  /// Counts the number of people in the room based on the indexes of local minimums.
+  /// Subprocess of the processFrame method.
+  /// [indexesOfLocalMinimums] is the list of indexes of local minimums in the weightedData List.
   List<int> countPeople(List<int> indexesOfLocalMinimums) {
     if (indexesOfLocalMinimums.isEmpty &&
         peopleMovements.isNotEmpty &&
@@ -146,7 +152,7 @@ class PeopleDetector {
       int destinationIndex =
           findLocalMinimum(peopleMovements[i].currentPosition);
       if (getDistance(destinationIndex, peopleMovements[i].currentPosition) >
-          MAX_MOVEMENT_LENGTH) {
+          maxMovementLength) {
         // If the distance is too big, remove the person from the list
         destinationIndex = peopleMovements[i].currentPosition;
         dev.log("Overflowing distance, banned", level: 2);
@@ -163,17 +169,17 @@ class PeopleDetector {
           } else {
             // Check if there is not multiple detection of the same person
             if (peopleCountHistory.isEmpty ||
-                peopleCountHistory.last.time != lastMeasurement.time) {
+                peopleCountHistory.last.timestamp != lastMeasurement.time) {
               if (peopleMovements[i].startedExiting) {
                 dev.log("Person exited ${lastMeasurement.time}");
                 peopleCount--;
                 peopleCountHistory
-                    .add(PeopleCount(peopleCount, lastMeasurement.time));
+                    .add(PeopleCount(lastMeasurement.time, peopleCount));
               } else {
                 dev.log("Person entered ${lastMeasurement.time}");
                 peopleCount++;
                 peopleCountHistory
-                    .add(PeopleCount(peopleCount, lastMeasurement.time));
+                    .add(PeopleCount(lastMeasurement.time, peopleCount));
               }
             }
             // Note: To modify list in Dart, syntax for(var element in list) cannot be used, use iteration for(int i = 0; i < list.length; i++)
@@ -208,7 +214,7 @@ class PeopleDetector {
               minDistance = getDistance(peopleMovements[j].currentPosition,
                   indexesOfLocalMinimums[i]);
 
-              if (minDistance >= MIN_LOCAL_MINIMUMS_DISTANCE) {
+              if (minDistance >= minLocalMinimumsDistance) {
                 peopleMovements.add(PersonMovement(indexesOfLocalMinimums[i]));
                 indexesOfPresentPeople.add(indexesOfLocalMinimums[
                     i]); // Add the index of the local minimum
@@ -242,12 +248,13 @@ class PeopleDetector {
   bool isBorderIndex(int index) {
     int x = index % depthDataGridSize; // Column index
     int y = index ~/ depthDataGridSize; // Row index
-    
+
     return index % depthDataGridSize < 2 ||
         index % depthDataGridSize > 5 ||
         ((x == 2 || x == 5) && (y == 0 || y == 7));
   }
 
+  /// Checks if the index is on the side of the grid, where people exits the room.
   bool isExitBorderIndex(int index) {
     return index % depthDataGridSize <=
         3; // Check if the index is on the left border of the grid
@@ -263,7 +270,8 @@ class PeopleDetector {
   }
 
   /// Finds the index of the local minimum in the weightedData List concerned as a 8x8 grid
-  
+  /// Algorithm: brute force
+  /// [startIndex] is the index of the local minimum to start searching from
   int findLocalMinimum(int startIndex) {
     bool localMinimumFound = false; // Flag to check if local minimum is found
     while (!localMinimumFound) {
@@ -336,46 +344,6 @@ class PeopleDetector {
     return localMinimums;
   }
 
-  List<int> getSquareMatrix(int startIndex, int size) {
-    if (startIndex % depthDataGridSize + size > depthDataGridSize) {
-      return []; // Invalid square matrix size
-    }
-    List<int> squareMatrix = List.filled(size * size, 0);
-    for (int i = 0; i < size; i++) {
-      for (int j = 0; j < size; j++) {
-        int index = startIndex + i * depthDataGridSize + j;
-        if (index >= 0 && index < 64) {
-          squareMatrix[i * size + j] = index;
-        }
-      }
-    }
-    return squareMatrix;
-  }
-
-  void savePeopleCountHistory(String path) async {
-    if (path.contains('.') == false) {
-      // Checks if the path contains the file extension
-      path = '$path.csv'; // Adds the file extension csv if not present
-    }
-
-    final file = File(path);
-    try {
-      final sink = file.openWrite();
-      sink.write('Time;People Count\n');
-
-      // Write the data to the file
-      for (var count in peopleCountHistory) {
-        sink.write('${count.time.toIso8601String()};${count.peopleCount}\n');
-      }
-      await sink.flush();
-      await sink.close();
-      peopleCountHistory.clear(); // Clear the history after saving
-
-      dev.log('Data saved to file successfully');
-    } catch (e) {
-      dev.log('Failed to save data to file: $e');
-    }
-  }
 
   /// Resets the people counter and clears the history
   void resetPeopleCounter() {
@@ -421,11 +389,3 @@ class PersonMovement {
   }
 }
 
-class PeopleCount {
-  /// Number of people in the grid
-  int peopleCount = 0;
-
-  /// Time of the change of the count
-  DateTime time;
-  PeopleCount(this.peopleCount, this.time);
-}

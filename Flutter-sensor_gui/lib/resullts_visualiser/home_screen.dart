@@ -74,7 +74,7 @@ class HomeScreenState extends State<HomeScreen> {
                       ),
                       DropdownMenuEntry<int>(
                         value: 3,
-                        label: "Custom range",
+                        label: "Custom date",
                         enabled: true,
                       ),
                     ]),
