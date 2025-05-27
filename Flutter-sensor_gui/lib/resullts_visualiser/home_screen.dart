@@ -39,74 +39,76 @@ class HomeScreenState extends State<HomeScreen> {
       if (width > constraints.maxHeight) {
         width = null;
       }
-      return Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                margin: const EdgeInsets.all(10),
-                child: DropdownMenu<int>(
-                    initialSelection: _selectedIndex,
-                    label: const Text('Data source'),
-                    width: 180,
-                    onSelected: (int? newValue) async {
-                      setState(() {
-                        _selectedIndex = newValue;
-                        _dataFuture = _fetchData(newValue);
-                      });
-                    },
-                    dropdownMenuEntries: const [
-                      DropdownMenuEntry<int>(
-                        value: 0,
-                        label: "Last hour",
-                        enabled: true,
-                      ),
-                      DropdownMenuEntry<int>(
-                        value: 1,
-                        label: "Last day",
-                        enabled: true,
-                      ),
-                      DropdownMenuEntry<int>(
-                        value: 2,
-                        label: "Last week",
-                        enabled: true,
-                      ),
-                      DropdownMenuEntry<int>(
-                        value: 3,
-                        label: "Custom date",
-                        enabled: true,
-                      ),
-                    ]),
-              ),
-              ElevatedButton(
-                  onPressed: onPressed, child: const Icon(Icons.refresh)),
-            ],
-          ),
-          // GitHub Copilot on request: change it to future builder to suite that future function, when loading, show progress indicator
-          FutureBuilder<List<FlSpot>>(
-            future: _dataFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: CircularProgressIndicator(),
-                );
-              } else if (snapshot.hasError) {
-                log("Error fetching data: ${snapshot.error}");
-                return const Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: Text('Something went wrong, try again later.',
-                      style: TextStyle(fontSize: 18, color: Colors.red)),
-                );
-              } else {
-                final dataPoints = snapshot.data ?? [];
-                return PeopleCountGraph(
-                    dataPoints: dataPoints, width: width ?? 600);
-              }
-            },
-          ),
-        ],
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  margin: const EdgeInsets.all(10),
+                  child: DropdownMenu<int>(
+                      initialSelection: _selectedIndex,
+                      label: const Text('Data source'),
+                      width: 180,
+                      onSelected: (int? newValue) async {
+                        setState(() {
+                          _selectedIndex = newValue;
+                          _dataFuture = _fetchData(newValue);
+                        });
+                      },
+                      dropdownMenuEntries: const [
+                        DropdownMenuEntry<int>(
+                          value: 0,
+                          label: "Last hour",
+                          enabled: true,
+                        ),
+                        DropdownMenuEntry<int>(
+                          value: 1,
+                          label: "Last day",
+                          enabled: true,
+                        ),
+                        DropdownMenuEntry<int>(
+                          value: 2,
+                          label: "Last week",
+                          enabled: true,
+                        ),
+                        DropdownMenuEntry<int>(
+                          value: 3,
+                          label: "Custom date",
+                          enabled: true,
+                        ),
+                      ]),
+                ),
+                ElevatedButton(
+                    onPressed: onPressed, child: const Icon(Icons.refresh)),
+              ],
+            ),
+            // GitHub Copilot on request: change it to future builder to suite that future function, when loading, show progress indicator
+            FutureBuilder<List<FlSpot>>(
+              future: _dataFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: CircularProgressIndicator(),
+                  );
+                } else if (snapshot.hasError) {
+                  log("Error fetching data: ${snapshot.error}");
+                  return const Padding(
+                    padding: EdgeInsets.all(32.0),
+                    child: Text('Something went wrong, try again later.',
+                        style: TextStyle(fontSize: 18, color: Colors.red)),
+                  );
+                } else {
+                  final dataPoints = snapshot.data ?? [];
+                  return PeopleCountGraph(
+                      dataPoints: dataPoints, width: width ?? 600);
+                }
+              },
+            ),
+          ],
+        ),
       );
     });
   }
@@ -117,7 +119,6 @@ class HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  
   Future<List<FlSpot>> _fetchData(int? index) async {
     if (peopleCountHandler == null) return [];
     if (index == 0) {
@@ -133,6 +134,8 @@ class HomeScreenState extends State<HomeScreen> {
       // Custom range
       final range = await showDateRangePicker(
         context: context,
+        confirmText: 'Select',
+        saveText: 'Select',
         firstDate: DateTime.now().subtract(const Duration(days: 30)),
         lastDate: DateTime.now(),
       );

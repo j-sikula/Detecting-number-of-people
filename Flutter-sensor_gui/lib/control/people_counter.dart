@@ -11,9 +11,12 @@ class PeopleCounter {
   int peopleCount = 0;
   final int heightThreshold = 1000;
   List<PeopleCount> peopleCountHistory = [];
+
   /// Number of pixels that must be higer than the threshold
   final int nPixelsToActivateZone = 5;
   static const int nZones = 4;
+  /// sensor is rotated by 90 degrees
+  static const transposeMatrix = true;  
 
   List<bool> zoneEntered = List.filled(nZones, false);
   List<bool> zoneExited = List.filled(nZones, false);
@@ -37,15 +40,22 @@ class PeopleCounter {
     // Set the height to 0 if the status is 255 (no target detected == floor)
     for (int i = 0; i < heightData.length; i++) {
       if (measurement.statuses[i] == 255) {
-       heightData[i] = 0;
+        heightData[i] = 0;
       }
     }
 
     for (int i = 0; i < nZones; i++) {
       int nPixelsAboveThreshold = 0;
       for (int j = 0; j < 64 / nZones; j++) {
-        if (heightData[i * 64 ~/ nZones + j] > heightThreshold) {
-          nPixelsAboveThreshold++;
+        if (transposeMatrix) {
+          if (heightData[i * 8 ~/ nZones + j % (8 ~/ nZones) + j ~/ (8 ~/ nZones) * 8] > heightThreshold) // matrix transposed
+            {
+                nPixelsAboveThreshold++;
+            }
+        } else {
+          if (heightData[i * 64 ~/ nZones + j] > heightThreshold) {
+            nPixelsAboveThreshold++;
+          }
         }
       }
       // Check if the zone is entered or exited
@@ -111,6 +121,31 @@ class PeopleCounter {
       return;
     }
     this.background = background;
+  }
+
+  void resetPeopleCounter() {
+    peopleCount = 0;
+    peopleCountNotifier.value = 0;
+    lastPosition = 0;
+    positionEntered = null;
+    zoneEntered = List.filled(nZones, false);
+    zoneExited = List.filled(nZones, false);
+    peopleCountHistory.clear();
+  }
+
+  /// Sets the background as the median of the provided measurements
+  void setBackgroundAsMedian(List<Measurement> measurements) {
+    if (measurements.isEmpty) {
+      log('No measurements provided to calculate median background');
+      return;
+    }
+    List<int> medianBackground = List.filled(64, 0);
+    for (int i = 0; i < 64; i++) {
+      List<int> values = measurements.map((m) => m.depthData[i]).toList();
+      values.sort();
+      medianBackground[i] = values[values.length ~/ 2];
+    }
+    setBackgroundFromList(medianBackground);
   }
 }
 

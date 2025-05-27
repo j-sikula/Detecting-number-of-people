@@ -5,6 +5,7 @@ import 'package:intl/intl.dart'; // Add this import for date formatting
 class PeopleCountGraph extends StatelessWidget {
   final List<FlSpot> dataPoints;
   late final double xInterval;
+  late final double yInterval;
   final double width;
   final double height;
 
@@ -15,6 +16,11 @@ class PeopleCountGraph extends StatelessWidget {
       this.height = 300}) {
     if (dataPoints.isNotEmpty) {
       xInterval = dataPoints.last.x - dataPoints.first.x;
+      if (dataPoints.intervalY > 5) {
+        yInterval = (dataPoints.intervalY / 5).round().toDouble(); // Divide by 2 for better readability
+      } else {
+        yInterval = 1; // Default to 1 if intervalY is zero or negative
+      }
     }
   }
 
@@ -48,12 +54,13 @@ class PeopleCountGraph extends StatelessWidget {
                 LineChartData(
                   gridData: const FlGridData(show: true),
                   titlesData: FlTitlesData(
-                    leftTitles: const AxisTitles(
+                    leftTitles: AxisTitles(
                       sideTitles: SideTitles(
                           showTitles: true,
+                          interval: yInterval,
                           reservedSize: 40,
-                          minIncluded: false,
-                          maxIncluded: false),
+                          minIncluded: true,
+                          maxIncluded: true),
                     ),
                     rightTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
@@ -159,5 +166,38 @@ class PeopleCountGraph extends StatelessWidget {
 
     // Default to splitting the interval into 5 equal parts if no suitable interval is found
     return xInterval / maxIntervals;
+  }
+}
+
+extension Maximum on List<FlSpot> {
+  double get maxY {
+    if (isEmpty) return 0.0;
+    double maxYval = this[0].y;
+    for (var spot in this) {
+      if (spot.y.isNaN || spot.y.isInfinite) {
+        throw ArgumentError('Invalid y value in FlSpot: $spot');
+      } else {
+        maxYval = spot.y > maxYval ? spot.y : maxYval;
+      }
+    }
+    return maxYval;
+  }
+
+  double get minY {
+    if (isEmpty) return 0.0;
+    double minYval = this[0].y;
+    for (var spot in this) {
+      if (spot.y.isNaN || spot.y.isInfinite) {
+        throw ArgumentError('Invalid y value in FlSpot: $spot');
+      } else {
+        minYval = spot.y < minYval ? spot.y : minYval;
+      }
+    }
+    return minYval;
+  }
+
+  double get intervalY {
+    if (isEmpty) return 0.0;
+    return (maxY - minY);
   }
 }

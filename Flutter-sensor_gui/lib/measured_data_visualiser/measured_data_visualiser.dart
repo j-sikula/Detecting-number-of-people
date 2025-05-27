@@ -45,7 +45,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
   @override
   void initState() {
     super.initState();
-    peopleCounter.setBackgroundFromList(List<int>.filled(64, 2100));
+    peopleCounter.setBackgroundFromList(List.filled(64, 2100)..[3] = 800..[4] = 800..[59] = 800..[60] = 800);
   }
 
   @override
@@ -76,6 +76,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(lblFileName),
+            const SizedBox(width: 10),
             ElevatedButton(
               onPressed: onBtnOpenFilePressed,
               child: isFileLoading
@@ -191,10 +192,15 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
       }
       setState(() {
         lblFileName = path;
+        if (path.length > 30) {
+          lblFileName = "...${path.substring(path.length - 30)}";
+        }
         indexOfMeasurement = 0;
         measurement = measurements;
       });
       peopleDetector.resetPeopleCounter();
+      peopleCounter.resetPeopleCounter();
+      //peopleCounter.setBackgroundAsMedian(measurements.sublist(0,50));
       for (var mes in measurement) {
         if (algorithm == 0) {
           peopleDetector.processFrame(mes); // Process all measurements
@@ -202,16 +208,20 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
           peopleCounter.processMeasurement(mes);
         }
       }
+      try {
+        String? pathProcessedData = await FilePicker.platform.saveFile();
 
-      String? pathProcessedData = await FilePicker.platform.saveFile();
-      if (pathProcessedData != null) {
-        if (algorithm == 0) {
-          savePeopleCountHistory(
-              pathProcessedData, peopleDetector.peopleCountHistory);
-        } else if (algorithm == 1) {
-          savePeopleCountHistory(
-              pathProcessedData, peopleCounter.peopleCountHistory);
+        if (pathProcessedData != null) {
+          if (algorithm == 0) {
+            savePeopleCountHistory(
+                pathProcessedData, peopleDetector.peopleCountHistory);
+          } else if (algorithm == 1) {
+            savePeopleCountHistory(
+                pathProcessedData, peopleCounter.peopleCountHistory);
+          }
         }
+      } catch (e) {
+        log("Error saving processed data: $e");
       }
     }
 

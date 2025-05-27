@@ -113,6 +113,7 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
     return Column(
       children: [
         Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               margin: const EdgeInsets.all(10),
@@ -138,27 +139,24 @@ class SerialPortSelectorState extends State<SerialPortSelector> {
             ElevatedButton(
                 onPressed: onBtnRefreshPressed,
                 child: const Icon(Icons.refresh)),
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.only(left: 10),
-                child: ElevatedButton(
-                  onPressed: onPressedOpenAndClosePort,
-                  child: Text(openCloseBtnLabel),
-                ),
+            Container(
+              width: 150,
+              margin: const EdgeInsets.only(left: 10),
+              child: ElevatedButton(
+                onPressed: onPressedOpenAndClosePort,
+                child: Text(openCloseBtnLabel),
               ),
             ),
-
-            //SerialMonitor(
-            //   key: _serialMonitorKey, serialPortHandler: serialPortHandler),
           ],
         ),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton(
               onPressed: onBtnSavePressed,
               child: const Text('Save to File'),
             ),
+            const SizedBox(width: 50),
             ElevatedButton(
               onPressed: onBtnSetBackgroundPressed,
               child: const Text('Set Background'),
