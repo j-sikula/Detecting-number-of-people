@@ -4,7 +4,8 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:sensor_gui/control/STMAlgorithmus.dart';
+import 'package:sensor_gui/control/stm_algorithm.dart';
+import 'package:sensor_gui/control/stm_algorithm_sums.dart';
 import 'package:sensor_gui/control/data_decoder.dart';
 import 'package:sensor_gui/control/people_count_handler.dart';
 import 'package:sensor_gui/control/people_counter.dart';
@@ -36,6 +37,8 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
   PeopleCounter peopleCounter = PeopleCounter(null); // Zone of Matrix algorithm
   STMAlgorithmus stmAlgorithmus =
       STMAlgorithmus(); // STM algorithm for detecting people
+  STMAlgorithmusSums stmAlgorithmusSums =
+      STMAlgorithmusSums(); // STM algorithm for detecting people with sums
   AlgorithmData dataAlgorithmGrid = AlgorithmData(
     dataGrid: List<int>.filled(64, 0),
     textToDisplay: "No data",
@@ -48,7 +51,11 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
   @override
   void initState() {
     super.initState();
-    peopleCounter.setBackgroundFromList(List.filled(64, 2100)..[3] = 800..[4] = 800..[59] = 800..[60] = 800);
+    peopleCounter.setBackgroundFromList(List.filled(64, 2100)
+      ..[3] = 800
+      ..[4] = 800
+      ..[59] = 800
+      ..[60] = 800);
   }
 
   @override
@@ -66,6 +73,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
                 DropdownMenuEntry(value: 0, label: "X-Correlation"),
                 DropdownMenuEntry(value: 1, label: "Zones of Matrix"),
                 DropdownMenuEntry(value: 2, label: "STM Algorithm"),
+                DropdownMenuEntry(value: 3, label: "STM Algorithm - sums"),
               ],
               onSelected: (int? newValue) {
                 setState(() {
@@ -205,6 +213,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
       peopleDetector.resetPeopleCounter();
       peopleCounter.resetPeopleCounter();
       stmAlgorithmus.resetPeopleCounter();
+      stmAlgorithmusSums.resetPeopleCounter();
       //peopleCounter.setBackgroundAsMedian(measurements.sublist(0,50));
       for (var mes in measurement) {
         if (algorithm == 0) {
@@ -213,6 +222,8 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
           peopleCounter.processMeasurement(mes);
         } else if (algorithm == 2) {
           stmAlgorithmus.processMeasurement(mes);
+        } else if (algorithm == 3) {
+          stmAlgorithmusSums.processMeasurement(mes);
         }
       }
       try {
@@ -228,6 +239,9 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
           } else if (algorithm == 2) {
             savePeopleCountHistory(
                 pathProcessedData, stmAlgorithmus.peopleCountHistory);
+          } else if (algorithm == 3) {
+            savePeopleCountHistory(
+                pathProcessedData, stmAlgorithmusSums.peopleCountHistory);
           }
         }
       } catch (e) {
@@ -264,8 +278,13 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
             textToDisplay: "Height data");
       } else if (algorithm == 2) {
         heightDataAlgorithmGrid = AlgorithmData(
-            dataGrid: stmAlgorithmus.processMeasurement(
-                measurement[indexOfMeasurement]),
+            dataGrid: stmAlgorithmus
+                .processMeasurement(measurement[indexOfMeasurement]),
+            textToDisplay: "Height data");
+      } else if (algorithm == 3) {
+        heightDataAlgorithmGrid = AlgorithmData(
+            dataGrid: stmAlgorithmusSums
+                .processMeasurement(measurement[indexOfMeasurement]),
             textToDisplay: "Height data");
       }
     });

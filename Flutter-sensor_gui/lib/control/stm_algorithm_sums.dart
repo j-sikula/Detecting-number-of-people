@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:sensor_gui/control/data_decoder.dart';
 import 'package:sensor_gui/control/people_counter.dart';
 
-class STMAlgorithmus {
+class STMAlgorithmusSums {
   List<int> exitSequence = [0, 2, 3, 1, 0];
   List<int> enterSequence = [0, 1, 3, 2, 0];
   int positionExit = 0; //position in the exit sequence
