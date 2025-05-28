@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:sensor_gui/control/STMAlgorithmus.dart';
 import 'package:sensor_gui/control/data_decoder.dart';
 import 'package:sensor_gui/control/people_count_handler.dart';
 import 'package:sensor_gui/control/people_counter.dart';
@@ -33,6 +34,8 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
   PeopleDetector peopleDetector =
       PeopleDetector(); // Local minimums of correlation matrix algorithm
   PeopleCounter peopleCounter = PeopleCounter(null); // Zone of Matrix algorithm
+  STMAlgorithmus stmAlgorithmus =
+      STMAlgorithmus(); // STM algorithm for detecting people
   AlgorithmData dataAlgorithmGrid = AlgorithmData(
     dataGrid: List<int>.filled(64, 0),
     textToDisplay: "No data",
@@ -62,6 +65,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
               dropdownMenuEntries: const [
                 DropdownMenuEntry(value: 0, label: "X-Correlation"),
                 DropdownMenuEntry(value: 1, label: "Zones of Matrix"),
+                DropdownMenuEntry(value: 2, label: "STM Algorithm"),
               ],
               onSelected: (int? newValue) {
                 setState(() {
@@ -206,6 +210,8 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
           peopleDetector.processFrame(mes); // Process all measurements
         } else if (algorithm == 1) {
           peopleCounter.processMeasurement(mes);
+        } else if (algorithm == 2) {
+          stmAlgorithmus.processMeasurement(mes);
         }
       }
       try {
@@ -218,6 +224,9 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
           } else if (algorithm == 1) {
             savePeopleCountHistory(
                 pathProcessedData, peopleCounter.peopleCountHistory);
+          } else if (algorithm == 2) {
+            savePeopleCountHistory(
+                pathProcessedData, stmAlgorithmus.peopleCountHistory);
           }
         }
       } catch (e) {
@@ -251,6 +260,11 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
         heightDataAlgorithmGrid = AlgorithmData(
             dataGrid: peopleCounter
                 .processMeasurement(measurement[indexOfMeasurement]),
+            textToDisplay: "Height data");
+      } else if (algorithm == 2) {
+        heightDataAlgorithmGrid = AlgorithmData(
+            dataGrid: stmAlgorithmus.processMeasurement(
+                measurement[indexOfMeasurement]),
             textToDisplay: "Height data");
       }
     });

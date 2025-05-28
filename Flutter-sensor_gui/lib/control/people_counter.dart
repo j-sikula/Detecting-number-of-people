@@ -14,7 +14,7 @@ class PeopleCounter {
 
   /// Number of pixels that must be higer than the threshold
   final int nPixelsToActivateZone = 5;
-  static const int nZones = 4;
+  static const int nZones = 2;
   /// sensor is rotated by 90 degrees
   static const transposeMatrix = true;  
 
@@ -47,14 +47,19 @@ class PeopleCounter {
     for (int i = 0; i < nZones; i++) {
       int nPixelsAboveThreshold = 0;
       for (int j = 0; j < 64 / nZones; j++) {
-        if (transposeMatrix) {
-          if (heightData[i * 8 ~/ nZones + j % (8 ~/ nZones) + j ~/ (8 ~/ nZones) * 8] > heightThreshold) // matrix transposed
+        if ((i * 64 ~/ nZones + j) % 8 > 1 && (i * 64 ~/ nZones + j) % 8 < 6) { // Exclude the first and last column
+          if (transposeMatrix) {
+            if (heightData[i * 8 ~/ nZones +
+                    j % (8 ~/ nZones) +
+                    j ~/ (8 ~/ nZones) * 8] >
+                heightThreshold) // matrix transposed
             {
-                nPixelsAboveThreshold++;
+              nPixelsAboveThreshold++;
             }
-        } else {
-          if (heightData[i * 64 ~/ nZones + j] > heightThreshold) {
-            nPixelsAboveThreshold++;
+          } else {
+            if (heightData[i * 64 ~/ nZones + j] > heightThreshold) {
+              nPixelsAboveThreshold++;
+            }
           }
         }
       }
