@@ -11,18 +11,20 @@ class STMAlgorithmus {
 
   int stateValue = 0; // 0 - no one, 2 - front, 1 - back, 3 - both
 
-  bool rotated = true; // Sensor is rotated by 180 degrees, invereses logic of enters and exits
+  bool rotated =
+      true; // Sensor is rotated by 180 degrees, invereses logic of enters and exits
   bool transposed = true; // Sensor is rotated by 90 degrees
+  int peopleCount = 0; // Current people count
+  List<PeopleCount> peopleCountHistory = [];
 
-  int threshold = 9000;
+  int threshold = 6000;
   List<int> background = List.filled(64, 2100)
     ..[3] = 800
     ..[4] = 800
     ..[59] = 800
     ..[60] = 800;
 
-  int peopleCount = 0; // Current people count
-  List<PeopleCount> peopleCountHistory = [];
+
 
   List<int> processMeasurement(Measurement currentFrame) {
     List<int> heightData = List.generate(background.length,
@@ -66,19 +68,21 @@ class STMAlgorithmus {
         }
       }
     }
-  
-    
+
     int currentStateValue = 0;
     if (enterZoneSum > threshold) {
       currentStateValue = 2;
     }
     if (exitZoneSum > threshold) {
       currentStateValue += 1;
+    } else if (currentStateValue == 0 && stateValue == 0){
+      positionExit = 0; // reset exit position if no one is detected and in previous state no one was detected
+      positionEnter = 0; // reset enter position if no one is detected
     }
 
-    log("enterZoneSum: $enterZoneSum, exitZoneSum: $exitZoneSum, threshold: $threshold, currentStateValue: $currentStateValue");
+    log("enterZoneSum: $enterZoneSum, exitZoneSum: $exitZoneSum, threshold: $threshold, currentStateValue: $currentStateValue, \t positionEnter: $positionEnter, positionExit: $positionExit");
 
-    if (currentStateValue != stateValue) {
+ if (currentStateValue != stateValue) {
       // found following state in exit sequence,
       if (currentStateValue == exitSequence[positionExit+1] && positionEnter == 0) {
         positionExit++;
@@ -105,7 +109,7 @@ class STMAlgorithmus {
       } else {
         positionExit = 0; // reset state machine if the sequence is broken
         positionEnter = 0;
-        log("State machine sequence broken: $currentStateValue != ${exitSequence[positionExit+1]} or ${enterSequence[positionExit+1]}");
+        log("State machine sequence not expected: $currentStateValue != ${exitSequence[positionExit+1]} or ${enterSequence[positionExit+1]}");
       } 
 
       if (positionEnter >= enterSequence.length){
@@ -121,9 +125,12 @@ class STMAlgorithmus {
     stateValue = currentStateValue;
     return heightData;
   }
-  
+
+  void resetPeopleCounter() {
+    peopleCount = 0;
+    peopleCountHistory.clear();
+    positionExit = 0;
+    positionEnter = 0;
+    stateValue = 0;
+  }  
 }
-/*
-int getStateValue(bool front, bool back) {
-  return front ? (back ? 3 : 1) : (back ? 2 : 0);
-}*/

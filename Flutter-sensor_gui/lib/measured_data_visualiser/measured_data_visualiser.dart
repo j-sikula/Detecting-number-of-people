@@ -204,6 +204,7 @@ class MeasuredDataVisualiserState extends State<MeasuredDataVisualiser> {
       });
       peopleDetector.resetPeopleCounter();
       peopleCounter.resetPeopleCounter();
+      stmAlgorithmus.resetPeopleCounter();
       //peopleCounter.setBackgroundAsMedian(measurements.sublist(0,50));
       for (var mes in measurement) {
         if (algorithm == 0) {
