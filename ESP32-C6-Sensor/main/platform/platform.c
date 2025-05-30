@@ -37,9 +37,9 @@ void VL53L7CX_InitCommunication(VL53L7CX_Platform *p_platform)
 	i2c_config_t conf = {
 		.mode = I2C_MODE_MASTER,
 		.sda_io_num = I2C_MASTER_SDA_IO,
-		.sda_pullup_en = GPIO_PULLUP_ENABLE,
+		.sda_pullup_en = GPIO_PULLUP_DISABLE,	// Pull-up resistor at SATEL-VL53L7CX
 		.scl_io_num = I2C_MASTER_SCL_IO,
-		.scl_pullup_en = GPIO_PULLUP_ENABLE,
+		.scl_pullup_en = GPIO_PULLUP_DISABLE,	// Pull-up resistor at SATEL-VL53L7CX
 		.master.clk_speed = I2C_MASTER_FREQ_HZ,
 	};
 	i2c_param_config(I2C_NUM_0, &conf);

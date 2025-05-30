@@ -15,7 +15,7 @@ class STMAlgorithmus {
       true; // Sensor is rotated by 180 degrees, invereses logic of enters and exits
   bool transposed = true; // Sensor is rotated by 90 degrees
 
-  int threshold = 1000;
+  int threshold = 1300;
   List<int> background = List.filled(64, 2100)
     ..[3] = 800
     ..[4] = 800

@@ -6,15 +6,19 @@ import 'package:sensor_gui/control/people_counter.dart';
 class STMAlgorithmusSums {
   List<int> exitSequence = [0, 2, 3, 1, 0];
   List<int> enterSequence = [0, 1, 3, 2, 0];
-  int positionExit = 0; //position in the exit sequence
-  int positionEnter = 0; //position in the enter sequence
+  ///position in the exit sequence
+  int positionExit = 0; 
+  ///position in the enter sequence
+  int positionEnter = 0; 
 
   int stateValue = 0; // 0 - no one, 2 - front, 1 - back, 3 - both
-
+ /// Sensor is rotated by 180 degrees, invereses logic of enters and exits
   bool rotated =
-      true; // Sensor is rotated by 180 degrees, invereses logic of enters and exits
-  bool transposed = true; // Sensor is rotated by 90 degrees
-  int peopleCount = 0; // Current people count
+      true;
+  /// Sensor is rotated by 90 degrees
+  bool transposed = true; 
+  /// Current people count
+  int peopleCount = 0; 
   List<PeopleCount> peopleCountHistory = [];
 
   int threshold = 6000;
@@ -80,8 +84,7 @@ class STMAlgorithmusSums {
       positionEnter = 0; // reset enter position if no one is detected
     }
 
-    log("enterZoneSum: $enterZoneSum, exitZoneSum: $exitZoneSum, threshold: $threshold, currentStateValue: $currentStateValue, \t positionEnter: $positionEnter, positionExit: $positionExit");
-
+    
  if (currentStateValue != stateValue) {
       // found following state in exit sequence,
       if (currentStateValue == exitSequence[positionExit+1] && positionEnter == 0) {
