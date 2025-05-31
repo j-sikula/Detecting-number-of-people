@@ -1,5 +1,17 @@
 # Sensors
 ## Available sensors - STMicroelectronics
+
+### 8x8 ToF sensor VL53L7CX
+- 60° x 60° square field of view, IR emitter 940 nm
+
+[Distributor](https://cz.mouser.com/ProductDetail/STMicroelectronics/VL53L7CXV0GC-1?qs=Znm5pLBrcAJT31SCy%252Bo4iQ%3D%3D)
+
+[Datasheet](https://cz.mouser.com/datasheet/2/389/vl53l7cx-3074793.pdf)
+
+[Official documentation and all datasheets](https://www.st.com/en/imaging-and-photonics-solutions/vl53l7cx.html#documentation)
+
+[Ultra Light Driver](https://www.st.com/en/embedded-software/stsw-img036.html)
+
 ### 8x8 ToF sensor VL53L8CX
 - 45° x 45° square field of view, IR emitter 940 nm
 
@@ -14,14 +26,6 @@
 
 [Datasheet](https://cz.mouser.com/datasheet/2/389/vl53l5cx-2886943.pdf)
 
-### 8x8 ToF sensor VL53L7CX
-- 60° x 60° square field of view, IR emitter 940 nm
-
-[Distributor](https://cz.mouser.com/ProductDetail/STMicroelectronics/VL53L7CXV0GC-1?qs=Znm5pLBrcAJT31SCy%252Bo4iQ%3D%3D)
-
-[Datasheet](https://cz.mouser.com/datasheet/2/389/vl53l7cx-3074793.pdf)
-
-[Official documentation](https://www.st.com/en/imaging-and-photonics-solutions/vl53l7cx.html#documentation)
 
 
 ### ToF sensor VL53L3CX
