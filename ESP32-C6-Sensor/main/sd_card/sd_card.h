@@ -1,6 +1,5 @@
 #ifndef SD_CARD_H
 #define SD_CARD_H
-// https://github.com/i400s/tmp-sdcard/blob/main/main/sdcard_main.c
 
 #include <string.h>
 #include <sys/unistd.h>
@@ -25,12 +24,6 @@
 #define SDCARD_MAX_OPEN_FILES 5
 #define SDCARD_ALLOCATION_UNIT_SIZE 16 * 1024
 
-// Pin assignments can be set in menuconfig, see "SD SPI Example Configuration" menu.
-// You can also change the pin assignments here by changing the following 4 lines.
-// #define PIN_NUM_MISO  20
-// #define PIN_NUM_MOSI  21
-// #define PIN_NUM_CLK   19
-// #define PIN_NUM_CS    22
 
 #define PIN_NUM_MISO GPIO_NUM_23
 #define PIN_NUM_MOSI GPIO_NUM_22
@@ -41,7 +34,7 @@
 
 /**
  * @brief Initialize the SD card connected using SPI and SD card module HW-125.
- * source: https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/sdmmc/main/sd_card_example_main.c
+ * source: https://github.com/espressif/esp-idf/blob/master/examples/storage/sd_card/sdmmc/main/sd_card_example_main.c, https://github.com/i400s/tmp-sdcard/blob/main/main/sdcard_main.c
  * @author Espressif under Apache license, modified by (c) 2025 Josef Sikula
  */
 void init_sd_card();

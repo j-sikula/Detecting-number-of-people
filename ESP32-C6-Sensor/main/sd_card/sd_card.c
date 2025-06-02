@@ -1,3 +1,11 @@
+/**
+ * @file sd_card.c
+ * @author Josef Sikula, Espressif Systems, i400s 
+ * @license Espressif Systems - Public Domain (or CC0), i400s - Public Domain (or CC0), Josef Sikula - MIT License
+ * @brief SD card initialization and file writing functions
+ */
+
+
 #include "sd_card.h"
 
 static const char *TAG = "SD_CARD";
