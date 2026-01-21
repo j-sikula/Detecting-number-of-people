@@ -8,7 +8,9 @@
 #include "esp_log.h"
 #include "led_indicator/led_indicator.h"
 
+#ifdef CONFIG_BLINK_LED_STRIP
 #define ENABLE_BLINK_INDICATOR
+#endif
 
 #define N_PIXELS_TO_ACTIVATE_ZONE 5
 #define HEIGHT_THRESHOLD 1000

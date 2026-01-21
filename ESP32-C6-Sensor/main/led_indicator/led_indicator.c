@@ -8,7 +8,7 @@
 
 static uint8_t s_led_state = 0;
 
-#ifdef CONFIG_BLINK_LED_STRIP
+
 
 static led_strip_handle_t led_strip;
 
@@ -25,7 +25,7 @@ static uint8_t single_blink_duration = 0;
 
 void blink_led(uint8_t blink_period)
 {
-	/* If the addressable LED is enabled */
+#ifdef CONFIG_BLINK_LED_STRIP	/* If the addressable LED is enabled */
 	if (s_led_state)
 	{
 		/* Set the LED pixel using RGB from 0 (0%) to 255 (100%) for each color */
@@ -41,12 +41,14 @@ void blink_led(uint8_t blink_period)
 	/* Toggle the LED state */
 	s_led_state = !s_led_state;
 	vTaskDelay(blink_period * BASE_PERIOD / portTICK_PERIOD_MS);
+	#endif
 }
 
 void led_loop(void)
 {
 	while (1)
 	{
+		#ifdef CONFIG_BLINK_LED_STRIP
 		// ESP_LOGI(TAG, "Turning the LED %s!", s_led_state == true ? "ON" : "OFF");
 		if (blink_period > 0)
 		{
@@ -62,6 +64,9 @@ void led_loop(void)
 			led_strip_clear(led_strip);
 
 		}
+		#else
+		vTaskDelay(100 / portTICK_PERIOD_MS); // just to avoid busy loop when LED strip is not enabled
+		#endif
 	}
 }
 
@@ -91,7 +96,7 @@ void configure_led(void)
 	led_strip_clear(led_strip);
 }
 
-#endif
+
 
 void single_blink(uint8_t red, uint8_t green, uint8_t blue, uint8_t duration_100ms)
 {

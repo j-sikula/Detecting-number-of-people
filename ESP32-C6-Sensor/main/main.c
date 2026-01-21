@@ -70,11 +70,11 @@ void app_main(void)
 		return;
 	}
 
-	xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 6, NULL);
+	// xTaskCreate(vTaskLoop, "forever_loop", 40 * 1024, NULL, 6, NULL);
 
 	xTaskCreate(vTaskWifi, "wifi_task", 32 * 1024, NULL, 4, NULL);
-	xTaskCreate(vTaskSDCard, "sd_card_task", 32 * 1024, NULL, 5, NULL);
-	xTaskCreate(vTaskResetPeopleCounter, "rst_p_c_task", 1024, NULL, 3, NULL);
+	// xTaskCreate(vTaskSDCard, "sd_card_task", 32 * 1024, NULL, 5, NULL);
+	// xTaskCreate(vTaskResetPeopleCounter, "rst_p_c_task", 1024, NULL, 3, NULL);
 	led_loop();
 }
 
@@ -134,8 +134,23 @@ void vTaskWifi()
 	// Obtain time after connecting to Wi-Fi
 	if (obtain_time())
 	{
+
+		people_count_t *people_count = (people_count_t *)malloc(sizeof(people_count_t));
+		if (people_count == NULL)
+		{
+			ESP_LOGE("PeopleCounter", "Failed to allocate memory for people count");
+			return;
+		}
+
+		people_count->timestamp = get_current_time();
+		people_count->people_count = 1;
+
+
 		google_api_access_token = generate_access_token();
 		stop_led();
+		upload_to_firebase("test", &people_count, 0, google_api_access_token); // just to check if token is valid
+		upload_people_count_to_google_sheets(SPREADSHEET_ID, &people_count, 0, "test", google_api_access_token); // just to check if token is valid
+		
 		while (true)
 		{
 

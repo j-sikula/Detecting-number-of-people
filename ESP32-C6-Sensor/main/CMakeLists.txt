@@ -12,4 +12,4 @@ idf_component_register(SRCS "main.c"
                         SRCS "people_counter/people_counter_correlation_matrix.c"
                         SRCS "people_counter/person_movement.c"
                        INCLUDE_DIRS "."
-                       EMBED_TXTFILES "server_cert.pem" "server_api_cert.pem")
+                       EMBED_TXTFILES "server_cert.pem" "server_api_cert.pem" "server_firebase_cert.pem")

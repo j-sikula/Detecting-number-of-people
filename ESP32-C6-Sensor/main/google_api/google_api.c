@@ -7,14 +7,15 @@
  */
 
 #include "google_api.h"
-#include "keys.h"     //API_KEY
-#include "esp_mac.h"  //needed for http
+#include "keys.h"    //API_KEY
+#include "esp_mac.h" //needed for http
 #include "esp_http_client.h"
 #include "lwip/sockets.h" //needed for http
 #include "esp_log.h"
 #include "cJSON.h"
 
 extern const uint8_t server_cert_pem_start[] asm("_binary_server_api_cert_pem_start");
+extern const uint8_t server_firebase_cert_pem_start[] asm("_binary_server_firebase_cert_pem_start");
 extern const uint8_t server_cert_pem_end[] asm("_binary_server_api_cert_pem_end");
 
 static const char *TAG = "google_sheets";
@@ -76,8 +77,6 @@ esp_err_t http_event_handler(esp_http_client_event_t *evt)
     return ESP_OK;
 }
 
-
-
 void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_count_t **data, uint8_t n_data, const char *sheet_name, const char *access_token)
 {
     static uint8_t n_request_repeated = 0;
@@ -95,7 +94,7 @@ void upload_people_count_to_google_sheets(const char *spreadsheet_id, people_cou
     }
     strncat(dataJSON, "]}", (JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data - 1) * PEOPLE_COUNT_STR_LENGTH) * sizeof(char) - strlen(dataJSON) - 1);
     ESP_LOGI(TAG, "Data JSON: %s", dataJSON);
-    uint8_t status_code = _send_api_request(url, HTTP_METHOD_POST, dataJSON, 3 * 1024, access_token);
+    uint8_t status_code = _send_api_request(url, HTTP_METHOD_POST, dataJSON, 3 * 1024, (const char *)server_cert_pem_start, access_token);
 
     // when sheet does not exist, create a new sheet and retry the request
     if (status_code != 200)
@@ -140,11 +139,10 @@ void create_new_sheet(const char *spreadsheet_id, const char *sheet_name, const 
     cJSON_AddItemToObject(root, "requests", requests);
     char *data = cJSON_PrintUnformatted(root);
     cJSON_Delete(root);
-    _send_api_request(url, HTTP_METHOD_POST, data, 4 * 1024, access_token);
+    _send_api_request(url, HTTP_METHOD_POST, data, 4 * 1024, (const char *)server_cert_pem_start,access_token);
 }
 
-
-uint16_t _send_api_request(const char *url, esp_http_client_method_t method, char *data, int tx_buffer_size, const char *access_token)
+uint16_t _send_api_request(const char *url, esp_http_client_method_t method, char *data, int tx_buffer_size, const char *server_cert, const char *access_token)
 {
 
     if (data == NULL)
@@ -158,16 +156,18 @@ uint16_t _send_api_request(const char *url, esp_http_client_method_t method, cha
     esp_http_client_config_t config = {
         .url = url,
         .event_handler = http_event_handler,
-        .cert_pem = (const char *)server_cert_pem_start,
+        .cert_pem = (const char *)server_cert,
         .user_data = &response,
         .buffer_size = 4 * 1024,
         .buffer_size_tx = tx_buffer_size,
     };
     esp_http_client_handle_t client = esp_http_client_init(&config);
 
-    char auth_header[1040];
-    snprintf(auth_header, sizeof(auth_header), "Bearer %s", access_token);
-    esp_http_client_set_header(client, "Authorization", auth_header);
+    if (access_token != NULL) {
+        char auth_header[1040];
+        snprintf(auth_header, sizeof(auth_header), "Bearer %s", access_token);
+        esp_http_client_set_header(client, "Authorization", auth_header);
+    }
     esp_http_client_set_method(client, method);
     esp_http_client_set_header(client, "Content-Type", "application/json");
     esp_http_client_set_post_field(client, data, strlen(data));
@@ -218,4 +218,45 @@ uint16_t _send_api_request(const char *url, esp_http_client_method_t method, cha
     free(data);
     esp_http_client_cleanup(client);
     return esp_http_client_get_status_code(client);
+}
+
+void upload_to_firebase(const char *room, people_count_t **data, uint8_t n_data, const char *access_token)
+{
+    static uint8_t n_request_repeated = 0;
+    char url[2048];
+    // FIX: Removed '?auth=%s'. The access token is handled by the Authorization header in _send_api_request
+    snprintf(url, sizeof(url), 
+             "https://centering-vine-444509-m0-default-rtdb.europe-west1.firebasedatabase.app/%s.json?access_token=%s", 
+             room, access_token);
+    char *dataJSON = (char *)malloc((JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data - 1) * PEOPLE_COUNT_STR_LENGTH) * sizeof(char));
+
+    ESP_LOGI(TAG, "TEST URL: %s", url);
+
+    snprintf(dataJSON, JSON_UPLOAD_PEOPLE_COUNT_LENGTH * sizeof(char), "[{\"timestamp\": \"%s\", \"peopleCount\": %d}", data[0]->timestamp, data[0]->people_count);
+
+    for (uint8_t i = 1; i < n_data; i++)
+    {
+        char row_buffer[60]; // example: ,{"timestamp": "2025-03-28 10:09:44,283", "peopleCount": 12}
+        snprintf(row_buffer, sizeof(row_buffer), ",{\"timestamp\":\"%s\",\"peopleCount\":%d}", data[i]->timestamp, data[i]->people_count);
+        strncat(dataJSON, row_buffer, (JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data - 1) * PEOPLE_COUNT_STR_LENGTH) * sizeof(char) - strlen(dataJSON) - 1);
+    }
+    strncat(dataJSON, "]", (JSON_UPLOAD_PEOPLE_COUNT_LENGTH + (n_data - 1) * PEOPLE_COUNT_STR_LENGTH) * sizeof(char) - strlen(dataJSON) - 1);
+    ESP_LOGI(TAG, "Data JSON: %s", dataJSON);
+    uint8_t status_code = _send_api_request(url, HTTP_METHOD_POST, dataJSON, 3 * 1024, (const char *)server_firebase_cert_pem_start, NULL);
+
+    // when failed retry the request
+    if (status_code != 200)
+    {
+        if (n_request_repeated < REQUEST_RETRIES)
+        {
+            n_request_repeated++;
+            ESP_LOGI(TAG, "Retrying the request to Firebase");
+            upload_to_firebase(room, data, n_data, access_token);
+        }
+    }
+    else
+    {
+        // reset the counter when the request is successful
+        n_request_repeated = 0;
+    }
 }

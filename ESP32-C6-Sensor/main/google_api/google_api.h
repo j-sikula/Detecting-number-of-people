@@ -26,7 +26,9 @@ typedef struct
 } http_response_t;
 
 
-uint16_t _send_api_request(const char *url, esp_http_client_method_t method, char *data, int tx_buffer_size, const char *access_token);
+uint16_t _send_api_request(const char *url, esp_http_client_method_t method, char *data, int tx_buffer_size, const char *server_cert, const char *access_token);
+
+void upload_to_firebase(const char *room, people_count_t **data, uint8_t n_data, const char *access_token);
 
 
 /**

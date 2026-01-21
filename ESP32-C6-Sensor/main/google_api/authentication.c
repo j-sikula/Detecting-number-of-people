@@ -32,7 +32,7 @@ char *create_jwt(const char *client_email, const char *private_key)
     last_access_token_time = time(NULL);
     char payload[512];
     snprintf(payload, sizeof(payload),
-             "{\"iss\":\"%s\",\"sub\":\"%s\",\"aud\":\"https://oauth2.googleapis.com/token\",\"iat\":%lld,\"exp\":%lld,\"scope\":\"https://www.googleapis.com/auth/spreadsheets\"}",
+             "{\"iss\":\"%s\",\"sub\":\"%s\",\"aud\":\"https://oauth2.googleapis.com/token\",\"iat\":%lld,\"exp\":%lld,\"scope\":\"https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email\"}",
              client_email, client_email, last_access_token_time, last_access_token_time + 3600); // valid 3600 s
 
     // Base64 encode header and payload
